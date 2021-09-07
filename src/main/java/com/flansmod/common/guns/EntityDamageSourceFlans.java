@@ -18,8 +18,8 @@ import com.flansmod.common.types.InfoType;
 public class EntityDamageSourceFlans extends EntityDamageSourceIndirect {
 
     public InfoType weapon;
-    private EntityPlayer shooter;
-    private boolean headshot;
+    public EntityPlayer shooter;
+    public boolean headshot;
     public boolean melee;
 
     public EntityDamageSourceFlans(String s, Entity entity, EntityPlayer player, InfoType wep, boolean head, boolean isMelee) {
