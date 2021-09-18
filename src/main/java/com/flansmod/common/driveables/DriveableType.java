@@ -155,6 +155,10 @@ public class DriveableType extends PaintableType {
      * The fuel tank size
      */
     public int fuelTankSize = 100;
+    /**
+     * Whether the driveable requires fuel to run
+     */
+    public boolean needsFuel = true;
 
     //Rendering variables
     /**
@@ -654,6 +658,8 @@ public class DriveableType extends PaintableType {
                 numMissileSlots = Integer.parseInt(split[1]);
             else if (split[0].equals("FuelTankSize"))
                 fuelTankSize = Integer.parseInt(split[1]);
+  	    else if (split[0].equals("NeedsFuel"))
+                needsFuel = Boolean.parseBoolean(split[1]);
             else if (split[0].equals("EngineStartTime"))
                 engineStartTime = Integer.parseInt(split[1]);
             else if (split[0].equals("FilterAmmunitionInput"))
