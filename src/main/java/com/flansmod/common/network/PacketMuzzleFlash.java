@@ -91,7 +91,7 @@ public class PacketMuzzleFlash extends PacketBase
                 if (g.model.muzzleFlashPoint != null) {
                     Vector3f.add(handOffset, (Vector3f) g.model.muzzleFlashPoint, handOffset);
                 } else {
-                    Vector3f.add(handOffset, new Vector3f(0.4F, 0.2F, 0), handOffset);
+                    Vector3f.add(handOffset, new Vector3f(0.5F, 0.22F, 0), handOffset);
                 }
 
                 if (barrelAttachment != null && barrelAttachment.model != null && barrelAttachment.model.attachmentFlashOffset != null) {

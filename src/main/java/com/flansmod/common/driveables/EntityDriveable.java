@@ -1,35 +1,9 @@
 package com.flansmod.common.driveables;
 
-import cofh.api.energy.IEnergyContainerItem;
-import com.flansmod.api.IControllable;
-import com.flansmod.api.IExplodeable;
-import com.flansmod.client.EntityCamera;
-import com.flansmod.client.FlansModClient;
-import com.flansmod.client.debug.EntityDebugVector;
-import com.flansmod.common.FlansMod;
-import com.flansmod.common.RotatedAxes;
-import com.flansmod.common.driveables.DriveableType.ParticleEmitter;
-import com.flansmod.common.driveables.DriveableType.ShootParticle;
-import com.flansmod.common.driveables.collisions.CollisionPlane;
-import com.flansmod.common.driveables.collisions.CollisionShapeBox;
-import com.flansmod.common.driveables.collisions.CollisionTest;
-import com.flansmod.common.driveables.mechas.EntityMecha;
-import com.flansmod.common.guns.*;
-import com.flansmod.common.guns.raytracing.BulletHit;
-import com.flansmod.common.guns.raytracing.DriveableHit;
-import com.flansmod.common.network.PacketDriveableDamage;
-import com.flansmod.common.network.PacketDriveableKeyHeld;
-import com.flansmod.common.network.PacketParticle;
-import com.flansmod.common.network.PacketPlaySound;
-import com.flansmod.common.parts.ItemPart;
-import com.flansmod.common.parts.PartType;
-import com.flansmod.common.teams.TeamsManager;
-import com.flansmod.common.vector.Vector3f;
-import cpw.mods.fml.common.network.ByteBufUtils;
-import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
+
+import java.util.ArrayList;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
@@ -43,11 +17,55 @@ import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.*;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityDamageSourceIndirect;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
+import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
+import cofh.api.energy.IEnergyContainerItem;
 
-import java.util.ArrayList;
+import com.flansmod.api.IControllable;
+import com.flansmod.api.IExplodeable;
+import com.flansmod.client.EntityCamera;
+import com.flansmod.client.FlansModClient;
+import com.flansmod.client.debug.EntityDebugVector;
+import com.flansmod.common.FlansMod;
+import com.flansmod.common.RotatedAxes;
+import com.flansmod.common.driveables.DriveableType.ParticleEmitter;
+import com.flansmod.common.driveables.DriveableType.ShootParticle;
+import com.flansmod.common.driveables.collisions.CollisionPlane;
+import com.flansmod.common.driveables.collisions.CollisionShapeBox;
+import com.flansmod.common.driveables.collisions.CollisionTest;
+import com.flansmod.common.driveables.mechas.EntityMecha;
+import com.flansmod.common.guns.EntityBullet;
+import com.flansmod.common.guns.EntityDamageSourceFlans;
+import com.flansmod.common.guns.EntityShootable;
+import com.flansmod.common.guns.EnumFireMode;
+import com.flansmod.common.guns.GunType;
+import com.flansmod.common.guns.InventoryHelper;
+import com.flansmod.common.guns.ItemBullet;
+import com.flansmod.common.guns.ItemShootable;
+import com.flansmod.common.guns.ShootableType;
+import com.flansmod.common.guns.raytracing.BulletHit;
+import com.flansmod.common.guns.raytracing.DriveableHit;
+import com.flansmod.common.network.PacketDriveableDamage;
+import com.flansmod.common.network.PacketDriveableKeyHeld;
+import com.flansmod.common.network.PacketParticle;
+import com.flansmod.common.network.PacketPlaySound;
+import com.flansmod.common.parts.ItemPart;
+import com.flansmod.common.parts.PartType;
+import com.flansmod.common.teams.TeamsManager;
+import com.flansmod.common.vector.Vector3f;
+import com.flansmod.common.guns.FlansModExplosion;
+
+import cpw.mods.fml.common.network.ByteBufUtils;
+import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public abstract class EntityDriveable extends Entity implements IControllable, IExplodeable, IEntityAdditionalSpawnData {
     public boolean syncFromServer = true;
@@ -350,8 +368,8 @@ public abstract class EntityDriveable extends Entity implements IControllable, I
     /**
      * Called with the movement of the mouse. Used in controlling vehicles if need be.
      *
-     * @param deltaY
-     * @param deltaX
+     * @param deltaY change in Y
+     * @param deltaX change in X
      * @return if mouse movement was handled.
      */
     @Override
@@ -2286,8 +2304,7 @@ public abstract class EntityDriveable extends Entity implements IControllable, I
 
     @SuppressWarnings("unused")
     public void updateRiderPos(Entity rider, CollisionTest test, Vector3f pos, Vector3f motion) {
-        boolean isDriveable = false;
-        if (rider instanceof EntityDriveable) isDriveable = true;
+        boolean isDriveable = rider instanceof EntityDriveable;
         Vector3f vehicleMotion = lastPos;
 
         Vector3f riderMountPoint = new Vector3f(rider.posX - posX, rider.posY - posY, rider.posZ - posZ);
@@ -2451,6 +2468,7 @@ public abstract class EntityDriveable extends Entity implements IControllable, I
                     if (seat.riddenByEntity instanceof EntityPlayer) {
 //						((EntityPlayer)seats[i].riddenByEntity).addPotionEffect(new PotionEffect(Potion.harm.id, 10, 5));
                         Entity entity = seat.riddenByEntity;
+                        seat.riddenByEntity.setInvisible(false);
                         seat.riddenByEntity.mountEntity(null);
                         if (this.lastAtkEntity instanceof EntityPlayer) {
                             entity.attackEntityFrom(DamageSource.causePlayerDamage((EntityPlayer) this.lastAtkEntity), 10000000);

@@ -54,7 +54,7 @@ public class ItemVehicle extends ItemMapBase implements IPaintableItem
     }
 
 	@Override
-	/** Make sure client and server side NBTtags update */
+	/* Make sure client and server side NBTtags update */
 	public boolean getShareTag()
 	{
 		return true;
@@ -211,16 +211,15 @@ public class ItemVehicle extends ItemMapBase implements IPaintableItem
     @SideOnly(Side.CLIENT)
     public IIcon getIconIndex(ItemStack stack)
     {
-		if (stack != null) {
+    	try {
 			if (stack.getItemDamage() > icons.length) {
 				return icons[0];
 			} else {
 				return icons[stack.getItemDamage()];
 			}
-		} else {
-			return icons[0];
+		} catch (NullPointerException e) {
+    		return null;
 		}
-
     }
 
     /** Make sure that creatively spawned planes have nbt data */
