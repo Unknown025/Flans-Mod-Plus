@@ -288,7 +288,9 @@ public class TickHandlerClient {
             GL11.glEnable(GL12.GL_RESCALE_NORMAL);
             OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240F, 240F);
             for (KillMessage killMessage : killMessages) {
-                drawSlotInventory(mc.fontRenderer, new ItemStack(killMessage.weapon.item), i - mc.fontRenderer.getStringWidth("     " + killMessage.killedName) - 12, j - 36 - killMessage.line * 16);
+                ItemStack itemStack = new ItemStack(killMessage.weapon.item);
+                if (killMessage.weapon.item instanceof ItemGun) itemStack.setItemDamage(killMessage.itemDamage);
+                drawSlotInventory(mc.fontRenderer, itemStack, i - mc.fontRenderer.getStringWidth("        " + killMessage.killedName) - 12, j - 36 - killMessage.line * 16);
             }
             GL11.glDisable(3042 /*GL_BLEND*/);
             RenderHelper.disableStandardItemLighting();
@@ -570,45 +572,45 @@ public class TickHandlerClient {
                 if (currentHeldItem != null && currentHeldItem.getItem() instanceof ItemGun) {
                     GunType type = ((ItemGun) currentHeldItem.getItem()).type;
                     for (AttachmentType attachment : type.getCurrentAttachments(currentHeldItem))
-                    if (attachment != null && attachment.flashlight) {
-                        for (int i = 0; i < 2; i++) {
-                            MovingObjectPosition ray = player.rayTrace(attachment.flashlightRange / 2F * (i + 1), 1F);
-                            if (ray != null) {
-                                int x = ray.blockX;
-                                int y = ray.blockY;
-                                int z = ray.blockZ;
-                                int side = ray.sideHit;
-                                switch (side) {
-                                    case 0:
-                                        y--;
-                                        break;
-                                    case 1:
-                                        y++;
-                                        break;
-                                    case 2:
-                                        z--;
-                                        break;
-                                    case 3:
-                                        z++;
-                                        break;
-                                    case 4:
-                                        x--;
-                                        break;
-                                    case 5:
-                                        x++;
-                                        break;
+                        if (attachment != null && attachment.flashlight) {
+                            for (int i = 0; i < 2; i++) {
+                                MovingObjectPosition ray = player.rayTrace(attachment.flashlightRange / 2F * (i + 1), 1F);
+                                if (ray != null) {
+                                    int x = ray.blockX;
+                                    int y = ray.blockY;
+                                    int z = ray.blockZ;
+                                    int side = ray.sideHit;
+                                    switch (side) {
+                                        case 0:
+                                            y--;
+                                            break;
+                                        case 1:
+                                            y++;
+                                            break;
+                                        case 2:
+                                            z--;
+                                            break;
+                                        case 3:
+                                            z++;
+                                            break;
+                                        case 4:
+                                            x--;
+                                            break;
+                                        case 5:
+                                            x++;
+                                            break;
+                                    }
+                                    blockLightOverrides.add(new Vector3i(x, y, z));
+                                    mc.theWorld.setLightValue(EnumSkyBlock.Block, x, y, z, 12);
+                                    mc.theWorld.updateLightByType(EnumSkyBlock.Block, x, y + 1, z);
+                                    mc.theWorld.updateLightByType(EnumSkyBlock.Block, x, y - 1, z);
+                                    mc.theWorld.updateLightByType(EnumSkyBlock.Block, x + 1, y, z);
+                                    mc.theWorld.updateLightByType(EnumSkyBlock.Block, x - 1, y, z);
+                                    mc.theWorld.updateLightByType(EnumSkyBlock.Block, x, y, z + 1);
+                                    mc.theWorld.updateLightByType(EnumSkyBlock.Block, x, y, z - 1);
                                 }
-                                blockLightOverrides.add(new Vector3i(x, y, z));
-                                mc.theWorld.setLightValue(EnumSkyBlock.Block, x, y, z, 12);
-                                mc.theWorld.updateLightByType(EnumSkyBlock.Block, x, y + 1, z);
-                                mc.theWorld.updateLightByType(EnumSkyBlock.Block, x, y - 1, z);
-                                mc.theWorld.updateLightByType(EnumSkyBlock.Block, x + 1, y, z);
-                                mc.theWorld.updateLightByType(EnumSkyBlock.Block, x - 1, y, z);
-                                mc.theWorld.updateLightByType(EnumSkyBlock.Block, x, y, z + 1);
-                                mc.theWorld.updateLightByType(EnumSkyBlock.Block, x, y, z - 1);
                             }
                         }
-                    }
                 }
             }
 
@@ -616,9 +618,9 @@ public class TickHandlerClient {
                 if (obj instanceof EntityShootable) {
                     EntityShootable bullet = (EntityShootable) obj;
                     if (!bullet.isDead && bullet.getType().hasDynamicLight) {
-                        int x = (int)bullet.posX;
-                        int y = (int)bullet.posY;
-                        int z = (int)bullet.posZ;
+                        int x = (int) bullet.posX;
+                        int y = (int) bullet.posY;
+                        int z = (int) bullet.posZ;
                         blockLightOverrides.add(new Vector3i(bullet.posX, bullet.posY, bullet.posZ));
 
                         mc.theWorld.setLightValue(EnumSkyBlock.Block, x, y, z,
@@ -807,24 +809,25 @@ public class TickHandlerClient {
         itemRenderer.renderItemOverlayIntoGUI(fontRenderer, FlansModClient.minecraft.renderEngine, itemstack, i, j);
     }
 
-    public static void addKillMessage(boolean headshot, InfoType infoType, String killer, String killed) {
+    public static void addKillMessage(boolean headshot, InfoType infoType, int itmDmg, String killer, String killed) {
         for (KillMessage killMessage : killMessages) {
             killMessage.line++;
             if (killMessage.line > 10)
                 killMessage.timer = 0;
         }
-        killMessages.add(new KillMessage(headshot, infoType, killer, killed));
+        killMessages.add(new KillMessage(headshot, infoType, itmDmg, killer, killed));
     }
 
     private static final RenderItem itemRenderer = new RenderItem();
     private static final List<KillMessage> killMessages = new ArrayList<>();
 
     private static class KillMessage {
-        public KillMessage(boolean head, InfoType infoType, String killer, String killed) {
+        public KillMessage(boolean head, InfoType infoType, int itmDmg, String killer, String killed) {
             headshot = head;
             killerName = killer;
             killedName = killed;
             weapon = infoType;
+            itemDamage = itmDmg;
             line = 0;
             timer = 200;
         }
@@ -832,6 +835,7 @@ public class TickHandlerClient {
         public String killerName;
         public String killedName;
         public InfoType weapon;
+        public int itemDamage;
         public int timer;
         public int line;
         public boolean headshot;
