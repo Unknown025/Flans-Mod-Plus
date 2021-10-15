@@ -49,6 +49,7 @@ public class EntityDamageSourceFlans extends EntityDamageSourceIndirect {
                 new PacketKillMessage(
                         headshot,
                         weapon,
+                        shooter.getHeldItem().getItemDamage(),
                         ((killedTeam == null ? "f" : killedTeam.textColour) + player.getCommandSenderName()),
                         ((killerTeam == null ? "f" : killerTeam.textColour) + shooter.getCommandSenderName()),
                         dist
