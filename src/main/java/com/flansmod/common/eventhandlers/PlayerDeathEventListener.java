@@ -57,6 +57,7 @@ public class PlayerDeathEventListener {
 			FlansMod.getPacketHandler().sendToDimension(
 				new PacketKillMessage(false,
 					info,
+					killer.getHeldItem().getItemDamage(),
 					(killedTeam == null ? "f" : killedTeam.textColour) + killed.getDisplayName(),
 					(killerTeam == null ? "f" : killedTeam.textColour) + killer.getDisplayName(),
 					killed.getDistanceToEntity(killer)),
