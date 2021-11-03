@@ -54,14 +54,25 @@ public class PlayerDeathEventListener {
 			killerTeam = PlayerHandler.getPlayerData(killer).team;
 			killedTeam = PlayerHandler.getPlayerData(killed).team;
 
-			FlansMod.getPacketHandler().sendToDimension(
-				new PacketKillMessage(false,
-					info,
-					killer.getHeldItem().getItemDamage(),
-					(killedTeam == null ? "f" : killedTeam.textColour) + killed.getDisplayName(),
-					(killerTeam == null ? "f" : killedTeam.textColour) + killer.getDisplayName(),
-					killed.getDistanceToEntity(killer)),
-				DamageEvent.entityLiving.dimension);
+			if(killer.getHeldItem()!=null){
+				FlansMod.getPacketHandler().sendToDimension(
+						new PacketKillMessage(false,
+								info,
+								killer.getHeldItem().getItemDamage(),
+								(killedTeam == null ? "f" : killedTeam.textColour) + killed.getDisplayName(),
+								(killerTeam == null ? "f" : killedTeam.textColour) + killer.getDisplayName(),
+								killed.getDistanceToEntity(killer)),
+						DamageEvent.entityLiving.dimension);
+			} else {
+				FlansMod.getPacketHandler().sendToDimension(
+						new PacketKillMessage(false,
+								info,
+								0,
+								(killedTeam == null ? "f" : killedTeam.textColour) + killed.getDisplayName(),
+								(killerTeam == null ? "f" : killedTeam.textColour) + killer.getDisplayName(),
+								killed.getDistanceToEntity(killer)),
+						DamageEvent.entityLiving.dimension);
+			}
 			// FlansMod.log("Weapon:"+((EntityBullet)souceEntity).type+" victim:"+killed.getDisplayName()+" Murderer:"+killer.getDisplayName());
 			// FlansMod.log("Weapon:"+((EntityBullet)souceEntity).type+" victim:"+killed.getDisplayName()+" Murderer:"+killer.getDisplayName());
 			FlansMod.log(killer.getDisplayName() + " has killed " + killed.getDisplayName() + " with " + info.name + ". TickExisted:" + killed.ticksExisted / 20 +
