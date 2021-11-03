@@ -45,16 +45,29 @@ public class EntityDamageSourceFlans extends EntityDamageSourceIndirect {
 
         float dist = player.getDistanceToEntity(shooter);
 
-        FlansMod.getPacketHandler().sendToDimension(
-                new PacketKillMessage(
-                        headshot,
-                        weapon,
-                        shooter.getHeldItem().getItemDamage(),
-                        ((killedTeam == null ? "f" : killedTeam.textColour) + player.getCommandSenderName()),
-                        ((killerTeam == null ? "f" : killerTeam.textColour) + shooter.getCommandSenderName()),
-                        dist
+        if(shooter.getHeldItem()!=null){
+            FlansMod.getPacketHandler().sendToDimension(
+                    new PacketKillMessage(
+                            headshot,
+                            weapon,
+                            shooter.getHeldItem().getItemDamage(),
+                            ((killedTeam == null ? "f" : killedTeam.textColour) + player.getCommandSenderName()),
+                            ((killerTeam == null ? "f" : killerTeam.textColour) + shooter.getCommandSenderName()),
+                            dist
                     ),
-                living.dimension);
+                    living.dimension);
+        } else {
+            FlansMod.getPacketHandler().sendToDimension(
+                    new PacketKillMessage(
+                            headshot,
+                            weapon,
+                            0,
+                            ((killedTeam == null ? "f" : killedTeam.textColour) + player.getCommandSenderName()),
+                            ((killerTeam == null ? "f" : killerTeam.textColour) + shooter.getCommandSenderName()),
+                            dist
+                    ),
+                    living.dimension);
+        }
         return new ChatComponentText(
             EnumChatFormatting.DARK_GRAY + "[" + EnumChatFormatting.RED + "Flansmod" + EnumChatFormatting.DARK_GRAY + "] "
             + EnumChatFormatting.ITALIC + EnumChatFormatting.DARK_RED + player.getCommandSenderName() +
