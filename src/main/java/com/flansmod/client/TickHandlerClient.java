@@ -287,22 +287,20 @@ public class TickHandlerClient {
                 }
             }
             for (KillMessage killMessage : killMessages) {
-                mc.fontRenderer.drawString("\u00a7" + killMessage.killerName + "     " + "\u00a7" + killMessage.killedName, i - mc.fontRenderer.getStringWidth(killMessage.killerName + "     " + killMessage.killedName) - 6, j - 32 - killMessage.line * 16, 0xffffff);
-            }
 
-            //Draw icons indicated weapons used
-            RenderHelper.enableGUIStandardItemLighting();
-            GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-            GL11.glEnable(GL12.GL_RESCALE_NORMAL);
-            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240F, 240F);
-            for (KillMessage killMessage : killMessages) {
-                ItemStack itemStack = new ItemStack(killMessage.weapon.item);
-                if (killMessage.weapon.item instanceof ItemGun) itemStack.setItemDamage(killMessage.itemDamage);
-                drawSlotInventory(mc.fontRenderer, itemStack, i - mc.fontRenderer.getStringWidth("     " + killMessage.killedName) - 12, j - 36 - killMessage.line * 16);
-            }
-            GL11.glDisable(3042 /*GL_BLEND*/);
-            RenderHelper.disableStandardItemLighting();
+                String message = "\u00a7"+ killMessage.killerName + (killMessage.headshot ? "          " : "     ") + "\u00a7" + killMessage.killedName;
+                FlansModClient.minecraft.fontRenderer.drawString(message, i - FlansModClient.minecraft.fontRenderer.getStringWidth(message) - 6, j - 32 - killMessage.line * 16, 16777215);
 
+
+                RenderHelper.enableGUIStandardItemLighting();
+                drawSlotInventory(FlansModClient.minecraft.fontRenderer, new ItemStack(killMessage.weapon.item, 1, killMessage.itemDamage), i - FlansModClient.minecraft.fontRenderer
+                        .getStringWidth((killMessage.headshot ? "         " : "     ") + killMessage.killedName), j - 36 - killMessage.line * 16);
+                if (killMessage.headshot)
+                    drawSlotInventory(FlansModClient.minecraft.fontRenderer, new ItemStack(FlansMod.crosshairsymbol), i - FlansModClient.minecraft.fontRenderer
+                            .getStringWidth("     " + killMessage.killedName), j - 36 - killMessage.line * 16);
+                RenderHelper.disableStandardItemLighting();
+	    }
+		
             //Off-hand weapon graphics
             mc.renderEngine.bindTexture(offHand);
 
