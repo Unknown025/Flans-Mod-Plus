@@ -52,6 +52,7 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.monster.EntitySkeleton;
 import net.minecraft.entity.monster.EntityZombie;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.ForgeChunkManager;
 import net.minecraftforge.common.MinecraftForge;
@@ -126,7 +127,7 @@ public class FlansMod {
     public static float defaultADSSpreadMultiplierShotgun = 0.8F;
     public static boolean seatCollisions = true;
     public static boolean showItemDescriptions = true;
-    public static boolean showMuzzleFlashParticlesDefault = true;
+
 
     public static int armourSpawnRate = 20;
 
@@ -154,6 +155,7 @@ public class FlansMod {
     public static BlockSpawner spawner;
     public static ItemOpStick opStick;
     public static ItemFlagpole flag;
+    public static Item crosshairsymbol;
     public static ArrayList<BlockGunBox> gunBoxBlocks = new ArrayList<>();
     public static ArrayList<ItemBullet> bulletItems = new ArrayList<>();
     public static ArrayList<ItemGun> gunItems = new ArrayList<>();
@@ -199,6 +201,7 @@ public class FlansMod {
         }
 
         //Set up mod blocks and items
+        crosshairsymbol = (Item)(new Item()).setUnlocalizedName("crosshairsymbol").setTextureName("FlansMod:" + "crosshairsymbol");
         workbench = (BlockFlansWorkbench) (new BlockFlansWorkbench(1, 0).setBlockName("flansWorkbench").setBlockTextureName("flansWorkbench"));
         GameRegistry.registerBlock(workbench, ItemBlockManyNames.class, "flansWorkbench");
         GameRegistry.addRecipe(new ItemStack(workbench, 1, 0), "BBB", "III", "III", 'B', Items.bowl, 'I', Items.iron_ingot);
@@ -210,6 +213,7 @@ public class FlansMod {
         spawner = (BlockSpawner) (new BlockSpawner(Material.iron).setBlockName("teamsSpawner").setBlockUnbreakable().setResistance(1000000F));
         GameRegistry.registerBlock(spawner, ItemBlockManyNames.class, "teamsSpawner");
         GameRegistry.registerTileEntity(TileEntitySpawner.class, "teamsSpawner");
+        GameRegistry.registerItem(crosshairsymbol, "crosshairsymbol", MODID);
 
         paintjobTable = new BlockPaintjobTable();
         GameRegistry.registerBlock(paintjobTable, "paintjobTable");
@@ -685,7 +689,6 @@ public class FlansMod {
         defaultADSSpreadMultiplier = configFile.getFloat("Default ADS Spread Modifier", "Gameplay Settings (synced)", defaultADSSpreadMultiplier, 0, 10, "Modifier for spread when the player is aiming.");
         defaultADSSpreadMultiplierShotgun = configFile.getFloat("Default ADS Spread Modifier (Shotguns)", "Gameplay Settings (synced)", defaultADSSpreadMultiplierShotgun, 0, 10, "Modifier for spread when the player is aiming. (Multishot guns only).");
         seatCollisions = configFile.getBoolean("Seat Collisions", "Gameplay Settings (synced)", seatCollisions, "Whether seats should collide with the world. Prevents plane glitching through walls.");
-        showMuzzleFlashParticlesDefault = configFile.getBoolean("Muzzle Flash Particles Default", "Gameplay Settings (synced)", showMuzzleFlashParticlesDefault, "Enable muzzle flash particles by default. Gun configs can override.");
 
 
         //Client Side Settings
@@ -737,7 +740,6 @@ public class FlansMod {
         defaultADSSpreadMultiplier = configFile.getFloat("Default ADS Spread Modifier", "Gameplay Settings (synced)", defaultADSSpreadMultiplier, 0, 10, "Modifier for spread when the player is aiming.");
         defaultADSSpreadMultiplierShotgun = configFile.getFloat("Default ADS Spread Modifier (Shotguns)", "Gameplay Settings (synced)", defaultADSSpreadMultiplierShotgun, 0, 10, "Modifier for spread when the player is aiming. (Multishot guns only).");
         seatCollisions = configFile.getBoolean("Seat Collisions", "Gameplay Settings (synced)", seatCollisions, "Whether seats should collide with the world. Prevents plane glitching through walls.");
-        showMuzzleFlashParticlesDefault = configFile.getBoolean("Muzzle Flash Particles Default", "Gameplay Settings (synced)", showMuzzleFlashParticlesDefault, "Enable muzzle flash particles by default. Gun configs can override.");
 
         //Client Side Settings
         armsEnable = configFile.getBoolean("Enable Arms", Configuration.CATEGORY_GENERAL, armsEnable, "Enable arms rendering");
