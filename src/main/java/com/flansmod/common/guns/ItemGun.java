@@ -1570,4 +1570,29 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
 
         return (float) (int) ((result - (int) result) >= 0.5f ? result + 1 : result) / pow;
     }
+    public void setPreferedAmmoStack(ItemStack gun, ItemStack bullet) {
+        //If the gun has no tags, give it some
+        if (!gun.hasTagCompound()) {
+            gun.stackTagCompound = new NBTTagCompound();
+        }
+        String s = "preferedAmmo";
+        if (!gun.stackTagCompound.hasKey(s)) {
+            NBTTagCompound preferedAmmo = new NBTTagCompound();
+            gun.stackTagCompound.setString(s, ((ItemBullet)bullet.getItem()).type.shortName);
+        }
+    }
+
+    public String getPreferedAmmoStack(ItemStack gun) {
+        //If the gun has no tags, give it some
+        if (!gun.hasTagCompound()) {
+            gun.stackTagCompound = new NBTTagCompound();
+        }
+        String s = "preferedAmmo";
+        if (gun.stackTagCompound.hasKey(s)) {
+            return gun.stackTagCompound.getString(s);
+        }
+        return null;
+    }
+
+
 }
