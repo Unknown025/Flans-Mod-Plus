@@ -37,6 +37,7 @@ public class KeyInputHandler {
     public static KeyBinding gunKey = new KeyBinding("Gun Key", Keyboard.KEY_B, "Flan's Mod");
     public static KeyBinding controlSwitchKey = new KeyBinding("Control Switch key", Keyboard.KEY_C, "Flan's Mod");
     public static KeyBinding reloadKey = new KeyBinding("Reload key", Keyboard.KEY_R, "Flan's Mod");
+    public static KeyBinding selectAmmoKey = new KeyBinding("Select Ammo key", Keyboard.KEY_P, "Flan's Mod");
     public static KeyBinding gunModeKey = new KeyBinding("Gun Mode key", Keyboard.KEY_F, "Flan's Mod");
     public static KeyBinding teamsMenuKey = new KeyBinding("Teams Menu Key", Keyboard.KEY_G, "Flan's Mod");
     public static KeyBinding teamsScoresKey = new KeyBinding("Teams Scores Key", Keyboard.KEY_H, "Flan's Mod");
@@ -68,6 +69,7 @@ public class KeyInputHandler {
         ClientRegistry.registerKeyBinding(gunKey);
         ClientRegistry.registerKeyBinding(controlSwitchKey);
         ClientRegistry.registerKeyBinding(reloadKey);
+	ClientRegistry.registerKeyBinding(selectAmmoKey);
         ClientRegistry.registerKeyBinding(gunModeKey);
         ClientRegistry.registerKeyBinding(teamsMenuKey);
         ClientRegistry.registerKeyBinding(teamsScoresKey);
@@ -106,6 +108,10 @@ public class KeyInputHandler {
         }
         if (reloadKey.isPressed() && FlansModClient.shootTime(false) <= 0) {
             FlansMod.getPacketHandler().sendToServer(new PacketReload(false));
+            return;
+        }
+        if (selectAmmoKey.isPressed()) {
+            mc.displayGuiScreen(new GuiSelectAmmo());
             return;
         }
         if (gunModeKey.isPressed()) {
