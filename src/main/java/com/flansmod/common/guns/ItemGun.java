@@ -5,6 +5,9 @@ import java.util.Collections;
 import java.util.List;
 
 import com.flansmod.common.network.*;
+import net.minecraft.init.Items;
+import net.minecraft.nbt.NBTTagString;
+import net.minecraft.world.WorldSavedData;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
@@ -86,11 +89,15 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
     public static boolean sprinting = false;
     public static boolean shooting = false;
     public String originGunbox = "";
-    private boolean canClick = true;
-    private boolean lastIsShooting = false;
 
-    public String getOriginGunBox() { return originGunbox; }
-    public void setOriginGunBox(String e) { originGunbox = e; }
+    public String getOriginGunBox() {
+        return originGunbox;
+    }
+
+    public void setOriginGunBox(String e) {
+        originGunbox = e;
+    }
+
     // This is a bodge - the server needs to hold state that is held on the client.
     public boolean isScoped = false;
     public int soundDelay;
@@ -100,7 +107,7 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
     public int impactY = 0;
     public int impactZ = 0;
 
-    
+
     @Override
     public InfoType getInfoType() {
         return type;
@@ -225,6 +232,8 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
                         String line = bulletType.name + " " + (bulletStack.getMaxDamage() - bulletStack.getItemDamage())
                                 + "/" + bulletStack.getMaxDamage();
                         lines.add(line);
+                        String preferredAmmo = "Preferred Ammo: "+ShootableType.getShootableType(this.getPreferredAmmoStack(stack)).name;
+                        lines.add(preferredAmmo);
                     }
                 }
 
@@ -364,7 +373,7 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
                                     if ((offHandGunType.getFireMode(offHandGunStack) == EnumFireMode.FULLAUTO || offHandGunType.getFireMode(offHandGunStack) == EnumFireMode.MINIGUN) && leftMouseHeld) {
                                         if (clientSideShoot(player, offHandGunStack, offHandGunType, true)) {
                                             player.inventory.setInventorySlotContents(data.offHandGunSlot - 1, null);
-                                        }    
+                                        }
                                     }
                                 }
                             }
@@ -706,8 +715,6 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
                 }
             }
 
-            lastIsShooting = data.isShootingRight;
-
             //Left hand gun - offhand gun.
             if (type.oneHanded && data.offHandGunSlot != 0) {
                 ItemStack offHandGunStack = player.inventory.getStackInSlot(data.offHandGunSlot - 1);
@@ -883,72 +890,70 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
                     for (int j = 0; j < world.loadedEntityList.size(); j++) {
                         Object obj = world.loadedEntityList.get(j);
                         //Get players
-                        if (obj != player) {
-                            if (obj instanceof EntityPlayer) {
-                                EntityPlayer otherPlayer = (EntityPlayer) obj;
-                                PlayerData otherData = PlayerHandler.getPlayerData(otherPlayer);
-                                boolean shouldDoNormalHitDetect = false;
-                                if (otherData != null) {
-                                    if (otherPlayer.isDead || otherData.team == Team.spectators) {
-                                        continue;
-                                    }
-                                    int snapshotToTry = player instanceof EntityPlayerMP ? ((EntityPlayerMP) player).ping / 50 : 0;
-                                    if (snapshotToTry >= otherData.snapshots.length)
-                                        snapshotToTry = otherData.snapshots.length - 1;
-
-                                    PlayerSnapshot snapshot = otherData.snapshots[snapshotToTry];
-                                    if (snapshot == null)
-                                        snapshot = otherData.snapshots[0];
-
-                                    //DEBUG
-                                    //snapshot = new PlayerSnapshot(player);
-
-                                    //Check one last time for a null snapshot. If this is the case, fall back to normal hit detection
-                                    if (snapshot == null)
-                                        shouldDoNormalHitDetect = true;
-                                    else {
-                                        //Raytrace
-                                        ArrayList<BulletHit> playerHits = snapshot.raytrace(data.lastMeleePositions[k] == null ? nextPosInWorldCoords : data.lastMeleePositions[k], dPos);
-                                        hits.addAll(playerHits);
-                                    }
+                        if (obj instanceof EntityPlayer && obj != player) {
+                            EntityPlayer otherPlayer = (EntityPlayer) obj;
+                            PlayerData otherData = PlayerHandler.getPlayerData(otherPlayer);
+                            boolean shouldDoNormalHitDetect = false;
+                            if (otherData != null) {
+                                if (otherPlayer.isDead || otherData.team == Team.spectators) {
+                                    continue;
                                 }
+                                int snapshotToTry = player instanceof EntityPlayerMP ? ((EntityPlayerMP) player).ping / 50 : 0;
+                                if (snapshotToTry >= otherData.snapshots.length)
+                                    snapshotToTry = otherData.snapshots.length - 1;
 
-                                //If we couldn't get a snapshot, use normal entity hitbox calculations
-                                if (otherData == null || shouldDoNormalHitDetect) {
-                                    MovingObjectPosition mop = data.lastMeleePositions[k] == null ? player.boundingBox.calculateIntercept(nextPosInWorldCoords.toVec3(), Vec3.createVectorHelper(0F, 0F, 0F)) : player.boundingBox.calculateIntercept(data.lastMeleePositions[k].toVec3(), nextPosInWorldCoords.toVec3());
-                                    if (mop != null) {
-                                        Vector3f hitPoint = new Vector3f(mop.hitVec.xCoord - data.lastMeleePositions[k].x, mop.hitVec.yCoord - data.lastMeleePositions[k].y, mop.hitVec.zCoord - data.lastMeleePositions[k].z);
-                                        float hitLambda = 1F;
-                                        if (dPos.x != 0F)
-                                            hitLambda = hitPoint.x / dPos.x;
-                                        else if (dPos.y != 0F)
-                                            hitLambda = hitPoint.y / dPos.y;
-                                        else if (dPos.z != 0F)
-                                            hitLambda = hitPoint.z / dPos.z;
-                                        if (hitLambda < 0)
-                                            hitLambda = -hitLambda;
+                                PlayerSnapshot snapshot = otherData.snapshots[snapshotToTry];
+                                if (snapshot == null)
+                                    snapshot = otherData.snapshots[0];
 
-                                        hits.add(new PlayerBulletHit(new PlayerHitbox(otherPlayer, new RotatedAxes(), new Vector3f(), new Vector3f(), new Vector3f(), new Vector3f(), EnumHitboxType.BODY), hitLambda));
-                                    }
+                                //DEBUG
+                                //snapshot = new PlayerSnapshot(player);
+
+                                //Check one last time for a null snapshot. If this is the case, fall back to normal hit detection
+                                if (snapshot == null)
+                                    shouldDoNormalHitDetect = true;
+                                else {
+                                    //Raytrace
+                                    ArrayList<BulletHit> playerHits = snapshot.raytrace(data.lastMeleePositions[k] == null ? nextPosInWorldCoords : data.lastMeleePositions[k], dPos);
+                                    hits.addAll(playerHits);
                                 }
-                            } else {
-                                Entity entity = (Entity) obj;
-                                if (!entity.isDead && (entity instanceof EntityLivingBase || entity instanceof EntityAAGun) && entity.boundingBox != null && data.lastMeleePositions != null && data.lastMeleePositions[k] != null) {
-                                    MovingObjectPosition mop = entity.boundingBox.calculateIntercept(data.lastMeleePositions[k].toVec3(), nextPosInWorldCoords.toVec3());
-                                    if (mop != null) {
-                                        Vector3f hitPoint = new Vector3f(mop.hitVec.xCoord - data.lastMeleePositions[k].x, mop.hitVec.yCoord - data.lastMeleePositions[k].y, mop.hitVec.zCoord - data.lastMeleePositions[k].z);
-                                        float hitLambda = 1F;
-                                        if (dPos.x != 0F)
-                                            hitLambda = hitPoint.x / dPos.x;
-                                        else if (dPos.y != 0F)
-                                            hitLambda = hitPoint.y / dPos.y;
-                                        else if (dPos.z != 0F)
-                                            hitLambda = hitPoint.z / dPos.z;
-                                        if (hitLambda < 0)
-                                            hitLambda = -hitLambda;
+                            }
 
-                                        hits.add(new EntityHit(entity, hitLambda));
-                                    }
+                            //If we couldn't get a snapshot, use normal entity hitbox calculations
+                            if (otherData == null || shouldDoNormalHitDetect) {
+                                MovingObjectPosition mop = data.lastMeleePositions[k] == null ? player.boundingBox.calculateIntercept(nextPosInWorldCoords.toVec3(), Vec3.createVectorHelper(0F, 0F, 0F)) : player.boundingBox.calculateIntercept(data.lastMeleePositions[k].toVec3(), nextPosInWorldCoords.toVec3());
+                                if (mop != null) {
+                                    Vector3f hitPoint = new Vector3f(mop.hitVec.xCoord - data.lastMeleePositions[k].x, mop.hitVec.yCoord - data.lastMeleePositions[k].y, mop.hitVec.zCoord - data.lastMeleePositions[k].z);
+                                    float hitLambda = 1F;
+                                    if (dPos.x != 0F)
+                                        hitLambda = hitPoint.x / dPos.x;
+                                    else if (dPos.y != 0F)
+                                        hitLambda = hitPoint.y / dPos.y;
+                                    else if (dPos.z != 0F)
+                                        hitLambda = hitPoint.z / dPos.z;
+                                    if (hitLambda < 0)
+                                        hitLambda = -hitLambda;
+
+                                    hits.add(new PlayerBulletHit(new PlayerHitbox(otherPlayer, new RotatedAxes(), new Vector3f(), new Vector3f(), new Vector3f(), new Vector3f(), EnumHitboxType.BODY), hitLambda));
+                                }
+                            }
+                        } else {
+                            Entity entity = (Entity) obj;
+                            if (!entity.isDead && (entity instanceof EntityLivingBase || entity instanceof EntityAAGun) && entity.boundingBox != null && data.lastMeleePositions != null && data.lastMeleePositions[k] != null) {
+                                MovingObjectPosition mop = entity.boundingBox.calculateIntercept(data.lastMeleePositions[k].toVec3(), nextPosInWorldCoords.toVec3());
+                                if (mop != null) {
+                                    Vector3f hitPoint = new Vector3f(mop.hitVec.xCoord - data.lastMeleePositions[k].x, mop.hitVec.yCoord - data.lastMeleePositions[k].y, mop.hitVec.zCoord - data.lastMeleePositions[k].z);
+                                    float hitLambda = 1F;
+                                    if (dPos.x != 0F)
+                                        hitLambda = hitPoint.x / dPos.x;
+                                    else if (dPos.y != 0F)
+                                        hitLambda = hitPoint.y / dPos.y;
+                                    else if (dPos.z != 0F)
+                                        hitLambda = hitPoint.z / dPos.z;
+                                    if (hitLambda < 0)
+                                        hitLambda = -hitLambda;
+
+                                    hits.add(new EntityHit(entity, hitLambda));
                                 }
                             }
                         }
@@ -1077,6 +1082,7 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
         }
     }
 
+    private boolean canClick = true;
 
     public ItemStack tryToShoot(ItemStack gunStack, GunType gunType, World world, EntityPlayerMP entityplayer, boolean left) {
         sprinting = entityplayer.isSprinting();
@@ -1153,8 +1159,6 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
                 } else if ((gunType.clickSoundOnEmpty != null) && canClick) {
                     PacketPlaySound.sendSoundPacket(entityplayer.posX, entityplayer.posY, entityplayer.posZ, type.reloadSoundRange, entityplayer.dimension, gunType.clickSoundOnEmpty, true);
                     canClick = false;
-                } else if (data.isShootingRight != lastIsShooting) {
-                    PacketPlaySound.sendSoundPacket(entityplayer.posX, entityplayer.posY, entityplayer.posZ, type.reloadSoundRange, entityplayer.dimension, gunType.clickSoundOnEmptyRepeated, true);
                 }
 
             }
@@ -1204,7 +1208,7 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
             return false;
         //For playing sounds afterwards
         boolean reloadedSomething = false;
-
+        String preferredAmmoShortname = ((ItemGun) gunStack.getItem()).getPreferredAmmoStack(gunStack);
         //Check each ammo slot, one at a time
         for (int i = 0; i < gunType.getNumAmmoItemsInGun(gunStack); i++) {
             //Get the stack in the slot
@@ -1215,14 +1219,22 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
                 //Iterate over all inventory slots and find the magazine / bullet item with the most bullets
                 int bestSlot = -1;
                 int bulletsInBestSlot = 0;
+                boolean bestSlotIsPreferred = false;
                 for (int j = 0; j < inventory.getSizeInventory(); j++) {
                     ItemStack item = inventory.getStackInSlot(j);
 
                     if (item != null && item.getItem() instanceof ItemShootable && gunType.isAmmo(((ItemShootable) (item.getItem())).type, gunStack)) {
                         int bulletsInThisSlot = item.getMaxDamage() - item.getItemDamage();
-                        if (bulletsInThisSlot > bulletsInBestSlot) {
+                        boolean isPreferred = ((ItemShootable) item.getItem()).type.shortName.equals(preferredAmmoShortname);
+
+                        if (isPreferred) {
+                            if ((bestSlotIsPreferred && bulletsInThisSlot > bulletsInBestSlot) || !bestSlotIsPreferred) {
+                                bestSlot = j;
+                                bestSlotIsPreferred = true;
+                            }
+                        } else if (!bestSlotIsPreferred && bulletsInThisSlot > bulletsInBestSlot) {
                             bestSlot = j;
-                            bulletsInBestSlot = bulletsInThisSlot;
+                            bestSlotIsPreferred = false;
                         }
                     }
                 }
@@ -1314,18 +1326,18 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
             soundDelay = gunType.shootSoundLength;
             if (type.distantShootSound != null) {
                 FlansMod.packetHandler.sendToDonut(new PacketPlaySound(entityPlayer.posX, entityPlayer.posY,
-                        entityPlayer.posZ, type.distantShootSound), entityPlayer.posX, entityPlayer.posY,
+                                entityPlayer.posZ, type.distantShootSound), entityPlayer.posX, entityPlayer.posY,
                         entityPlayer.posZ, type.gunSoundRange, type.distantSoundRange, entityPlayer.dimension);
             }
         }
 
-         AttachmentType barrel = gunType.getBarrel(stack);
-         if ((barrel == null || !barrel.disableMuzzleFlash) && type.getShouldShowMuzzleFlash()) {
-             PacketMuzzleFlash p = new PacketMuzzleFlash(entityPlayer, type.muzzleFlashParticle, type.muzzleFlashParticleSize, type.flashTexture == null, gunType.shortName);
-             FlansMod.packetHandler.sendToAllAround(p, entityPlayer.posX, entityPlayer.posY, entityPlayer.posZ, 160, entityPlayer.dimension);
-         }
+        AttachmentType barrel = gunType.getBarrel(stack);
+        if ((barrel == null || !barrel.disableMuzzleFlash) && type.showMuzzleFlashParticles) {
+            PacketMuzzleFlash p = new PacketMuzzleFlash(entityPlayer, type.muzzleFlashParticle, type.muzzleFlashParticleSize, type.flashTexture == null, gunType.shortName);
+            FlansMod.packetHandler.sendToAllAround(p, entityPlayer.posX, entityPlayer.posY, entityPlayer.posZ, 160, entityPlayer.dimension);
+        }
 
-        
+
         if (!world.isRemote && bulletStack.getItem() instanceof ItemShootable) {
             // Spawn the bullet entities
             ItemShootable itemShootable = (ItemShootable) bulletStack.getItem();
@@ -1528,8 +1540,7 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
     }
 
     @SideOnly(Side.CLIENT)
-    public IIcon getIconIndex(ItemStack stack)
-    {
+    public IIcon getIconIndex(ItemStack stack) {
         try {
             if (stack.getItemDamage() < icons.length) {
                 return icons[stack.getItemDamage()];
@@ -1570,29 +1581,30 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
 
         return (float) (int) ((result - (int) result) >= 0.5f ? result + 1 : result) / pow;
     }
-    public void setPreferedAmmoStack(ItemStack gun, ItemStack bullet) {
+
+    public void setPreferredAmmoStack(ItemStack gun, ItemStack bullet) {
         //If the gun has no tags, give it some
         if (!gun.hasTagCompound()) {
             gun.stackTagCompound = new NBTTagCompound();
         }
-        String s = "preferedAmmo";
+        String s = "preferredAmmo";
         if (!gun.stackTagCompound.hasKey(s)) {
-            NBTTagCompound preferedAmmo = new NBTTagCompound();
-            gun.stackTagCompound.setString(s, ((ItemBullet)bullet.getItem()).type.shortName);
+            gun.stackTagCompound.setString(s, ((ItemShootable) bullet.getItem()).type.shortName);
+            System.out.println("Trying set tag preferredAmmo to " + ((ItemShootable) bullet.getItem()).type.shortName);
         }
+        gun.stackTagCompound.setString(s, ((ItemShootable) bullet.getItem()).type.shortName);
+        System.out.println("Trying set tag preferredAmmo to " + ((ItemShootable) bullet.getItem()).type.shortName);
     }
 
-    public String getPreferedAmmoStack(ItemStack gun) {
+    public String getPreferredAmmoStack(ItemStack gun) {
         //If the gun has no tags, give it some
         if (!gun.hasTagCompound()) {
             gun.stackTagCompound = new NBTTagCompound();
         }
-        String s = "preferedAmmo";
+        String s = "preferredAmmo";
         if (gun.stackTagCompound.hasKey(s)) {
             return gun.stackTagCompound.getString(s);
         }
         return null;
     }
-
-
 }
