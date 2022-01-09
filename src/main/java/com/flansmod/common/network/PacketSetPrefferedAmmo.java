@@ -1,7 +1,7 @@
 package com.flansmod.common.network;
 
-import com.flansmod.common.FlansMod;
 import com.flansmod.common.guns.ItemGun;
+import com.flansmod.common.guns.ShootableType;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
@@ -13,24 +13,24 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
 
 public class PacketSetPreferredAmmo extends PacketBase {
-    public int indexOfAmmo;
+    public String ammoName;
 
     @SuppressWarnings("unused")
     public PacketSetPreferredAmmo() {
     }
 
-    public PacketSetPreferredAmmo(int indexOfAmmo) {
-        this.indexOfAmmo = indexOfAmmo;
+    public PacketSetPreferredAmmo(String ammoName) {
+        this.ammoName = ammoName;
     }
 
     @Override
     public void encodeInto(ChannelHandlerContext ctx, ByteBuf data) {
-        data.writeInt(indexOfAmmo);
+        writeUTF(data,ammoName);
     }
 
     @Override
     public void decodeInto(ChannelHandlerContext ctx, ByteBuf data) {
-        indexOfAmmo = data.readInt();
+        ammoName = readUTF(data);
     }
 
     @Override
@@ -38,18 +38,16 @@ public class PacketSetPreferredAmmo extends PacketBase {
         ItemStack currentItem = playerEntity.inventory.getCurrentItem();
         if (currentItem != null && currentItem.getItem() instanceof ItemGun) {
             ItemGun itemGun = (ItemGun) currentItem.getItem();
-            if(playerEntity.inventory.mainInventory.length!=0){
-                ItemStack selectedAmmoStack = playerEntity.inventory.mainInventory[indexOfAmmo];
-                playerEntity.addChatMessage(new ChatComponentText(EnumChatFormatting.GRAY+selectedAmmoStack.getDisplayName()+" is new preferred ammo for "+itemGun.type.name));
-                itemGun.setPreferedAmmoStack(currentItem,selectedAmmoStack);
-                System.out.println(itemGun.getPreferedAmmoStack(currentItem));
-            }
+                ShootableType newPreferredAmmo = ShootableType.getShootableType(ammoName);
+                playerEntity.addChatMessage(new ChatComponentText(EnumChatFormatting.GRAY+newPreferredAmmo.name+" is new preferred ammo for "+itemGun.type.name));
+                itemGun.setPreferredAmmoStack(currentItem,ammoName);
         }
     }
 
     @Override
     @SideOnly(Side.CLIENT)
     public void handleClientSide(EntityPlayer clientPlayer) {
+        System.out.println("2");
     }
 }
 
