@@ -232,8 +232,10 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
                         String line = bulletType.name + " " + (bulletStack.getMaxDamage() - bulletStack.getItemDamage())
                                 + "/" + bulletStack.getMaxDamage();
                         lines.add(line);
-                        String preferredAmmo = "Preferred Ammo: "+ShootableType.getShootableType(this.getPreferredAmmoStack(stack)).name;
-                        lines.add(preferredAmmo);
+                        if (this.getPreferredAmmoStack(stack) != null) {
+                            String preferredAmmo = "Preferred Ammo: " + ShootableType.getShootableType(this.getPreferredAmmoStack(stack)).name;
+                            lines.add(preferredAmmo);
+                        }
                     }
                 }
 
