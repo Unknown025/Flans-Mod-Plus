@@ -47,7 +47,7 @@ public class PacketSetPreferredAmmo extends PacketBase {
     @Override
     @SideOnly(Side.CLIENT)
     public void handleClientSide(EntityPlayer clientPlayer) {
-        System.out.println("2");
+        FlansMod.log("Received set preferred ammo packet on client. Skipping.");
     }
 }
 
