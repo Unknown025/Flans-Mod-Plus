@@ -52,7 +52,6 @@ public class GuiSelectAmmo extends GuiScreen {
             for (int i = 0; i < ammoForThisGun.size(); i++) {
                 int x = i > 5 ? 70 : 20;
                 int y = i > 5 ? i - 6 : i;
-                System.out.println(x);
                 buttonList.add(new GuiButton(i + 1, (guiLeft + x), guiTop2 + 10 + (y + 1) * 30, 20, 20, String.valueOf(i + 1)));
             }
         }
@@ -127,7 +126,7 @@ public class GuiSelectAmmo extends GuiScreen {
             int x = i > 5 ? 95 : 45;
             int y = i > 5 ? i - 6 : i;
             drawSlotInventory(Minecraft.getMinecraft().fontRenderer, new ItemStack(ammoForThisGun.get(i).item), (guiLeft + x), guiTop2 + 10 + (y + 1) * 30);
-            mc.fontRenderer.drawString(String.valueOf(0), (guiLeft + x)+10, (guiTop2 + 10 + (y + 1) * 30)+5,0xFFFFFF);
+            //mc.fontRenderer.drawString(String.valueOf(0), (guiLeft + x)+10, (guiTop2 + 10 + (y + 1) * 30)+5,0xFFFFFF);
         }
         GL11.glDisable(3042);
         RenderHelper.disableStandardItemLighting();
