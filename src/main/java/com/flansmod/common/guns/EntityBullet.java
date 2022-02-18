@@ -269,6 +269,37 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
         }
     }
 
+    
+
+    @SideOnly(Side.CLIENT)
+    private void spawnParticles() {
+        double dX = (posX - prevPosX) / 10;
+        double dY = (posY - prevPosY) / 10;
+        double dZ = (posZ - prevPosZ) / 10;
+
+        float spread = 0.1F;
+        if (VLSDelay > 0 && type.boostPhaseParticle != null) {
+            for (int i = 0; i < 10; i++) {
+                FlansMod.proxy.spawnParticle(type.boostPhaseParticle,
+                        prevPosX + dX * i + rand.nextGaussian() * spread, prevPosY + dY * i + rand.nextGaussian() * spread, prevPosZ + dZ * i + rand.nextGaussian() * spread,
+                        0, 0, 0);
+            }
+        } else if (!type.VLS || (VLSDelay <= 0)) {
+            for (int i = 0; i < 10; i++) {
+                //EntityFX particle = FlansModClient.getParticle("flansmod.rocketexhaust", worldObj, prevPosX + dX * i + rand.nextGaussian() * spread, prevPosY + dY * i + rand.nextGaussian() * spread, prevPosZ + dZ * i + rand.nextGaussian() * spread);
+                //if(particle != null && Minecraft.getMinecraft().gameSettings.fancyGraphics)
+                //particle.renderDistanceWeight = 100D;
+                //worldObj.spawnEntityInWorld(particle);
+                FlansMod.proxy.spawnParticle(type.trailParticleType,
+                        prevPosX + dX * i + rand.nextGaussian() * spread, prevPosY + dY * i + rand.nextGaussian() * spread, prevPosZ + dZ * i + rand.nextGaussian() * spread,
+                        0, 0, 0);
+            }
+
+        }
+        //FlansMod.proxy.spawnParticle("explode", prevPosX + dX, prevPosY + dY, prevPosZ + dZ, motionX + (float)Math.random()*1 - 0.5, motionY + (float)Math.random()*1 - 0.5, motionZ +(float)Math.random()*1 - 0.5);
+
+    }
+	
     @Override
     public void onUpdate() {
         super.onUpdate();
@@ -586,10 +617,23 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
                 if (bulletHit instanceof DriveableHit) {
                     if (type.entityHitSoundEnable)
                         PacketPlaySound.sendSoundPacket(posX, posY, posZ, type.hitSoundRange, dimension, type.hitSound, true);
-
+                    boolean isFriendly=false;
                     DriveableHit driveableHit = (DriveableHit) bulletHit;
                     driveableHit.driveable.lastAtkEntity = owner;
-                    penetratingPower = driveableHit.driveable.bulletHit(this, driveableHit, penetratingPower);
+                    for (EntitySeat seat : driveableHit.driveable.seats) {
+                        if (seat.riddenByEntity != null && seat.riddenByEntity instanceof EntityPlayerMP) {
+                            PlayerData dataDriver = PlayerHandler.getPlayerData((EntityPlayerMP)seat.riddenByEntity);
+                            PlayerData dataAttacker = PlayerHandler.getPlayerData((EntityPlayerMP)owner);
+                            if(dataDriver.team.shortName.equals(dataAttacker.team.shortName)){
+                               isFriendly=true;
+                            }
+                        }
+                    }
+                    if(isFriendly){
+                        penetratingPower=0;
+                    } else {
+                        penetratingPower = driveableHit.driveable.bulletHit(this, driveableHit, penetratingPower);
+                    }
 
                     if (!worldObj.isRemote) {
                         if (owner instanceof EntityPlayer) {
@@ -1024,36 +1068,6 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
         if (worldObj.isRemote)
             extinguish();
     }
-
-    @SideOnly(Side.CLIENT)
-    private void spawnParticles() {
-        double dX = (posX - prevPosX) / 10;
-        double dY = (posY - prevPosY) / 10;
-        double dZ = (posZ - prevPosZ) / 10;
-
-        float spread = 0.1F;
-        if (VLSDelay > 0 && type.boostPhaseParticle != null) {
-            for (int i = 0; i < 10; i++) {
-                FlansMod.proxy.spawnParticle(type.boostPhaseParticle,
-                        prevPosX + dX * i + rand.nextGaussian() * spread, prevPosY + dY * i + rand.nextGaussian() * spread, prevPosZ + dZ * i + rand.nextGaussian() * spread,
-                        0, 0, 0);
-            }
-        } else if (!type.VLS || (VLSDelay <= 0)) {
-            for (int i = 0; i < 10; i++) {
-                //EntityFX particle = FlansModClient.getParticle("flansmod.rocketexhaust", worldObj, prevPosX + dX * i + rand.nextGaussian() * spread, prevPosY + dY * i + rand.nextGaussian() * spread, prevPosZ + dZ * i + rand.nextGaussian() * spread);
-                //if(particle != null && Minecraft.getMinecraft().gameSettings.fancyGraphics)
-                //particle.renderDistanceWeight = 100D;
-                //worldObj.spawnEntityInWorld(particle);
-                FlansMod.proxy.spawnParticle(type.trailParticleType,
-                        prevPosX + dX * i + rand.nextGaussian() * spread, prevPosY + dY * i + rand.nextGaussian() * spread, prevPosZ + dZ * i + rand.nextGaussian() * spread,
-                        0, 0, 0);
-            }
-
-        }
-        //FlansMod.proxy.spawnParticle("explode", prevPosX + dX, prevPosY + dY, prevPosZ + dZ, motionX + (float)Math.random()*1 - 0.5, motionY + (float)Math.random()*1 - 0.5, motionZ +(float)Math.random()*1 - 0.5);
-
-    }
-
 
     @SideOnly(Side.CLIENT)
     private void spawnHitParticles(double x, double y, double z) {
