@@ -1638,6 +1638,7 @@ public abstract class EntityDriveable extends Entity implements IControllable, I
      * Attack a certain part of a driveable and return whether it broke or not
      */
     public boolean attackPart(EnumDriveablePart ep, DamageSource source, float damage) {
+        boolean isFriendly = false;
         if (ep == EnumDriveablePart.core) {
             if (source.getSourceOfDamage() instanceof EntityLivingBase) {
                 this.lastAtkEntity = source.getSourceOfDamage();
@@ -1647,9 +1648,28 @@ public abstract class EntityDriveable extends Entity implements IControllable, I
                 this.lastAtkEntity = null;
             }
         }
+        if(source instanceof EntityDamageSourceFlans){
+            if(TeamsManager.getInstance().currentRound!=null){
+                EntityPlayerMP driver = null;
+                for(EntitySeat seat : this.seats){
+                    if(seat.riddenByEntity!=null && seat.riddenByEntity instanceof EntityPlayerMP){
+                        driver = (EntityPlayerMP)seat.riddenByEntity;
+                    }
+                }
+                if(driver!=null) {
+                    EntityDamageSourceFlans dsf = (EntityDamageSourceFlans) source;
+                    EntityPlayerMP attacker = (EntityPlayerMP) dsf.shooter;
+                    PlayerData attackerData = PlayerHandler.getPlayerData(attacker);
+                    PlayerData driverData = PlayerHandler.getPlayerData(driver);
+                    if(attackerData.team.shortName.equals(driverData.team.shortName)){
+                        isFriendly = true;
+                        damage=0;
+                    }
+                }
+
+            }
+        }
         DriveablePart part = driveableData.parts.get(ep);
-        //	FlansMod.log("EntityDriveable.attackPart %s : %s : damage=%.1f : %s : health=%d", ep.name(), ep.getName(), damage,
-        //			part.type.name(), part.health);
         return part.attack(damage, source.isFireDamage());
     }
 
