@@ -433,6 +433,10 @@ public class EntityMecha extends EntityDriveable
 					else if(bulletStack.getItem() instanceof ItemBullet)
 					{
 						//Shoot
+						GunFiredEvent gunFiredEvent = new GunFiredEvent(this);
+				        MinecraftForge.EVENT_BUS.post(gunFiredEvent);				        
+				        if(gunFiredEvent.isCanceled()) return false;
+				        
 						shoot(heldStack, gunType, bulletStack, creative, left);
 						
 						//Apply animations to 3D modelled guns
@@ -469,10 +473,6 @@ public class EntityMecha extends EntityDriveable
 
 	private void shoot(ItemStack stack, GunType gunType, ItemStack bulletStack, boolean creative, boolean left)
 	{
-		GunFiredEvent gunFiredEvent = new GunFiredEvent(this);
-        MinecraftForge.EVENT_BUS.post(gunFiredEvent);
-        if(gunFiredEvent.isCanceled()) return;
-		
 		MechaType mechaType = getMechaType();
 		BulletType bulletType = ((ItemBullet)bulletStack.getItem()).type;
 		RotatedAxes a = new RotatedAxes();
