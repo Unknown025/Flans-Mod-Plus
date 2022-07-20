@@ -26,6 +26,7 @@ import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings.GameType;
 import net.minecraftforge.common.ForgeHooks;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.BlockEvent;
 import cpw.mods.fml.common.network.ByteBufUtils;
 import cpw.mods.fml.relauncher.Side;
@@ -42,6 +43,7 @@ import com.flansmod.common.driveables.DriveablePosition;
 import com.flansmod.common.driveables.DriveableType;
 import com.flansmod.common.driveables.DriveableType.ParticleEmitter;
 import com.flansmod.common.driveables.mechas.MechaType.LegNode;
+import com.flansmod.common.eventhandlers.GunFiredEvent;
 import com.flansmod.common.driveables.EntityDriveable;
 import com.flansmod.common.driveables.EntitySeat;
 import com.flansmod.common.driveables.EnumDriveablePart;
@@ -149,9 +151,9 @@ public class EntityMecha extends EntityDriveable
 		isMecha = true;
 	}
 	
-	public EntityMecha(World world, double x, double y, double z, MechaType type, DriveableData data, NBTTagCompound tags, EntityPlayer p)
+	public EntityMecha(World world, double x, double y, double z, MechaType type, DriveableData data, NBTTagCompound tags) 
 	{
-		super(world, type, data, p);
+		super(world, type, data);
 		legAxes = new RotatedAxes();
 		setSize(2F, 3F);
 		stepHeight = 3;
@@ -163,7 +165,7 @@ public class EntityMecha extends EntityDriveable
 	
 	public EntityMecha(World world, double x, double y, double z, EntityPlayer placer, MechaType type, DriveableData data, NBTTagCompound tags) 
 	{
-		this(world, x, y, z, type, data, tags, placer);
+		this(world, x, y, z, type, data, tags);
 		rotateYaw(placer.rotationYaw + 90F);
 		legAxes.rotateGlobalYaw(placer.rotationYaw + 90F);
 		prevLegsYaw = legAxes.getYaw();
@@ -297,11 +299,7 @@ public class EntityMecha extends EntityDriveable
 			}
 			case 6 : //Exit : Get out
 			{
-				if (seats[0].riddenByEntity != null) {
-					seats[0].riddenByEntity.setInvisible(false);
-					seats[0].riddenByEntity.mountEntity(null);
-				}
-				
+				seats[0].riddenByEntity.mountEntity(null);
           		return true;
 			}
 			case 7 : //Inventory
@@ -471,6 +469,10 @@ public class EntityMecha extends EntityDriveable
 
 	private void shoot(ItemStack stack, GunType gunType, ItemStack bulletStack, boolean creative, boolean left)
 	{
+		GunFiredEvent gunFiredEvent = new GunFiredEvent(this);
+        MinecraftForge.EVENT_BUS.post(gunFiredEvent);
+        if(gunFiredEvent.isCanceled()) return;
+		
 		MechaType mechaType = getMechaType();
 		BulletType bulletType = ((ItemBullet)bulletStack.getItem()).type;
 		RotatedAxes a = new RotatedAxes();
@@ -567,20 +569,14 @@ public class EntityMecha extends EntityDriveable
         		worldObj.createExplosion(this, posX, posY, posZ, blockDamageFromFalling, TeamsManager.explosions);
         	}
         }
-        // assert that player is on ground, vehicle is empty and the player is in creative or non creatives can break
-        else if(
-        		damagesource.damageType.equals("player") &&
-				damagesource.getEntity().onGround &&
-				(seats[0] == null || seats[0].riddenByEntity == null) &&
-				((damagesource.getEntity() instanceof EntityPlayer && ((EntityPlayer)damagesource.getEntity()).capabilities.isCreativeMode) || TeamsManager.survivalCanBreakVehicles)
-		)
+        
+        else if(damagesource.damageType.equals("player") && damagesource.getEntity().onGround && (seats[0] == null || seats[0].riddenByEntity == null))
 		{
 			ItemStack mechaStack = new ItemStack(type.item, 1, driveableData.paintjobID);
 			mechaStack.stackTagCompound = new NBTTagCompound();
 			driveableData.writeToNBT(mechaStack.stackTagCompound);
 			inventory.writeToNBT(mechaStack.stackTagCompound);
 			entityDropItem(mechaStack, 0.5F);
-			if (!worldObj.isRemote && damagesource.getEntity() instanceof EntityPlayer) { FlansMod.log("Player %s broke mecha %s (%d) at (%f, %f, %f)", ((EntityPlayerMP)damagesource.getEntity()).getDisplayName(), type.shortName, getEntityId(), posX, posY, posZ); }
 	 		setDead();
 		}
         else
@@ -602,7 +598,8 @@ public class EntityMecha extends EntityDriveable
 		if (!worldObj.isRemote) {
 			checkParts();
 			// If it hit, send a damage update packet
-			FlansMod.getPacketHandler().sendToAllAround(new PacketDriveableDamage(this), posX, posY, posZ, FlansMod.driveableUpdateRange, dimension);
+			FlansMod.getPacketHandler().sendToAllAround(new PacketDriveableDamage(this), posX, posY, posZ, 100,
+					dimension);
 		}
 
 		return penetratingPower;
@@ -746,9 +743,6 @@ public class EntityMecha extends EntityDriveable
             stompDelay--;
 		
 		prevLegsYaw = legAxes.getYaw();
-
-		if (type.setPlayerInvisible && !this.worldObj.isRemote && seats[0].riddenByEntity != null)
-			seats[0].riddenByEntity.setInvisible(true);
 		
 		//Autorepair. Like a Boss.
 		
