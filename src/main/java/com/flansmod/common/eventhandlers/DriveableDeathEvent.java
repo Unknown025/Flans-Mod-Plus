@@ -5,7 +5,6 @@ import com.flansmod.common.driveables.EntityDriveable;
 import cpw.mods.fml.common.eventhandler.Cancelable;
 import cpw.mods.fml.common.eventhandler.Event;
 import net.minecraft.item.ItemStack;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
 
 @Cancelable
 public class DriveableDeathEvent extends Event {
