@@ -713,14 +713,15 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
     @Override
     public boolean interactFirst(EntityPlayer entityplayer) //interact : change back when Forge updates
     {
-    	PlayerEnterSeatEvent playerEnterSeatEvent = new PlayerEnterSeatEvent(this, entityplayer);
-        MinecraftForge.EVENT_BUS.post(playerEnterSeatEvent);
-        if(playerEnterSeatEvent.isCanceled()) return false;
-    	
     	if (isDead)
             return false;
         if (worldObj.isRemote)
             return false;
+        
+        PlayerEnterSeatEvent playerEnterSeatEvent = new PlayerEnterSeatEvent(this, entityplayer);
+        MinecraftForge.EVENT_BUS.post(playerEnterSeatEvent);
+        if(playerEnterSeatEvent.isCanceled()) return false;
+        
         //If they are using a repair tool, don't put them in
         ItemStack currentItem = entityplayer.getCurrentEquippedItem();
         if (currentItem != null && currentItem.getItem() instanceof ItemTool && ((ItemTool) currentItem.getItem()).type.healDriveables)
