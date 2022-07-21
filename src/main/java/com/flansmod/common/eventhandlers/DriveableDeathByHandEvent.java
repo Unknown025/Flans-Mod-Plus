@@ -7,19 +7,16 @@ import cpw.mods.fml.common.eventhandler.Event;
 import net.minecraft.item.ItemStack;
 
 @Cancelable
-public class DriveableDeathEvent extends Event {
+public class DriveableDeathByHandEvent extends Event {
 	
 	private EntityDriveable driveable;
-	
-	private boolean byHand;
 	
 	private ItemStack driveableStack;
 	
 	
-	public DriveableDeathEvent(EntityDriveable driveable, ItemStack driveableStack, boolean byHand) {
+	public DriveableDeathByHandEvent(EntityDriveable driveable, ItemStack driveableStack) {
 		this.driveable = driveable;
 		this.driveableStack = driveableStack;
-		this.byHand = byHand;
 	}
 	
 	public EntityDriveable getEntity() {
@@ -28,10 +25,6 @@ public class DriveableDeathEvent extends Event {
 	
 	public ItemStack getItemStack() {
 		return driveableStack;
-	}
-	
-	public boolean isDestroyedByHand() {
-		return byHand;
 	}
 	
 }
