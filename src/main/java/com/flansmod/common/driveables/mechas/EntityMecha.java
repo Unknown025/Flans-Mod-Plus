@@ -587,7 +587,7 @@ public class EntityMecha extends EntityDriveable
 			driveableData.writeToNBT(mechaStack.stackTagCompound);
 			inventory.writeToNBT(mechaStack.stackTagCompound);
 			
-			DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, null, false);
+			DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, mechaStack, true);
 	        MinecraftForge.EVENT_BUS.post(driveableDeathEvent);
 	       
 	        if(!driveableDeathEvent.isCanceled()) {
