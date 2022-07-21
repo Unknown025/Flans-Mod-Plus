@@ -2,7 +2,41 @@ package com.flansmod.common.driveables.mechas;
 
 import java.util.ArrayList;
 
-import scala.collection.concurrent.Debug;
+import com.flansmod.client.debug.EntityDebugVector;
+import com.flansmod.client.gui.GuiDriveableController;
+import com.flansmod.client.model.GunAnimations;
+import com.flansmod.common.FlansMod;
+import com.flansmod.common.RotatedAxes;
+import com.flansmod.common.driveables.DriveableData;
+import com.flansmod.common.driveables.DriveablePart;
+import com.flansmod.common.driveables.DriveableType;
+import com.flansmod.common.driveables.EntityDriveable;
+import com.flansmod.common.driveables.EntitySeat;
+import com.flansmod.common.driveables.EnumDriveablePart;
+import com.flansmod.common.driveables.mechas.MechaType.LegNode;
+import com.flansmod.common.eventhandlers.DriveableDeathByHandEvent;
+import com.flansmod.common.eventhandlers.GunFiredEvent;
+import com.flansmod.common.guns.BulletType;
+import com.flansmod.common.guns.EntityBullet;
+import com.flansmod.common.guns.EnumFireMode;
+import com.flansmod.common.guns.GunType;
+import com.flansmod.common.guns.InventoryHelper;
+import com.flansmod.common.guns.ItemBullet;
+import com.flansmod.common.guns.ItemGun;
+import com.flansmod.common.guns.raytracing.DriveableHit;
+import com.flansmod.common.network.PacketDriveableDamage;
+import com.flansmod.common.network.PacketDriveableGUI;
+import com.flansmod.common.network.PacketDriveableKey;
+import com.flansmod.common.network.PacketMechaControl;
+import com.flansmod.common.network.PacketPlaySound;
+import com.flansmod.common.teams.TeamsManager;
+import com.flansmod.common.tools.ItemTool;
+import com.flansmod.common.vector.Vector3f;
+import com.flansmod.common.vector.Vector3i;
+
+import cpw.mods.fml.common.network.ByteBufUtils;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -21,56 +55,12 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
-import net.minecraft.util.Vec3;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldSettings.GameType;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.BlockEvent;
-import cpw.mods.fml.common.network.ByteBufUtils;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
-
-import com.flansmod.client.debug.EntityDebugVector;
-import com.flansmod.client.gui.GuiDriveableController;
-import com.flansmod.client.model.GunAnimations;
-import com.flansmod.common.FlansMod;
-import com.flansmod.common.RotatedAxes;
-import com.flansmod.common.driveables.DriveableData;
-import com.flansmod.common.driveables.DriveablePart;
-import com.flansmod.common.driveables.DriveablePosition;
-import com.flansmod.common.driveables.DriveableType;
-import com.flansmod.common.driveables.DriveableType.ParticleEmitter;
-import com.flansmod.common.driveables.mechas.MechaType.LegNode;
-import com.flansmod.common.eventhandlers.DriveableDeathEvent;
-import com.flansmod.common.eventhandlers.GunFiredEvent;
-import com.flansmod.common.driveables.EntityDriveable;
-import com.flansmod.common.driveables.EntitySeat;
-import com.flansmod.common.driveables.EnumDriveablePart;
-import com.flansmod.common.driveables.EnumWeaponType;
-import com.flansmod.common.driveables.PilotGun;
-import com.flansmod.common.guns.BulletType;
-import com.flansmod.common.guns.EntityShootable;
-import com.flansmod.common.guns.EnumFireMode;
-import com.flansmod.common.guns.EntityBullet;
-import com.flansmod.common.guns.GunType;
-import com.flansmod.common.guns.InventoryHelper;
-import com.flansmod.common.guns.ItemBullet;
-import com.flansmod.common.guns.ItemGun;
-import com.flansmod.common.guns.ItemShootable;
-import com.flansmod.common.guns.ShootableType;
-import com.flansmod.common.guns.raytracing.DriveableHit;
-import com.flansmod.common.network.PacketDriveableDamage;
-import com.flansmod.common.network.PacketDriveableGUI;
-import com.flansmod.common.network.PacketDriveableKey;
-import com.flansmod.common.network.PacketDriveableKeyHeld;
-import com.flansmod.common.network.PacketMechaControl;
-import com.flansmod.common.network.PacketPlaySound;
-import com.flansmod.common.teams.TeamsManager;
-import com.flansmod.common.tools.ItemTool;
-import com.flansmod.common.vector.Vector3f;
-import com.flansmod.common.vector.Vector3i;
 
 public class EntityMecha extends EntityDriveable
 {
@@ -587,10 +577,10 @@ public class EntityMecha extends EntityDriveable
 			driveableData.writeToNBT(mechaStack.stackTagCompound);
 			inventory.writeToNBT(mechaStack.stackTagCompound);
 			
-			DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, mechaStack, true);
-	        MinecraftForge.EVENT_BUS.post(driveableDeathEvent);
+			DriveableDeathByHandEvent driveableDeathByHandEvent = new DriveableDeathByHandEvent(this, mechaStack);
+	        MinecraftForge.EVENT_BUS.post(driveableDeathByHandEvent);
 	       
-	        if(!driveableDeathEvent.isCanceled()) {
+	        if(!driveableDeathByHandEvent.isCanceled()) {
 	        	entityDropItem(mechaStack, 0.5F);
 				if (!worldObj.isRemote && damagesource.getEntity() instanceof EntityPlayer) { FlansMod.log("Player %s broke mecha %s (%d) at (%f, %f, %f)", ((EntityPlayerMP)damagesource.getEntity()).getDisplayName(), type.shortName, getEntityId(), posX, posY, posZ); }
 		 		setDead();
