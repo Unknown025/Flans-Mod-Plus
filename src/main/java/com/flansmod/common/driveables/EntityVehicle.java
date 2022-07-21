@@ -1,5 +1,7 @@
 package com.flansmod.common.driveables;
 
+import java.util.List;
+
 import com.flansmod.api.IExplodeable;
 import com.flansmod.client.model.AnimTankTrack;
 import com.flansmod.client.model.AnimTrackLink;
@@ -8,7 +10,7 @@ import com.flansmod.common.PlayerData;
 import com.flansmod.common.PlayerHandler;
 import com.flansmod.common.RotatedAxes;
 import com.flansmod.common.driveables.VehicleType.SmokePoint;
-import com.flansmod.common.eventhandlers.DriveableDeathEvent;
+import com.flansmod.common.eventhandlers.DriveableDeathByHandEvent;
 import com.flansmod.common.network.PacketDriveableKey;
 import com.flansmod.common.network.PacketParticle;
 import com.flansmod.common.network.PacketPlaySound;
@@ -17,6 +19,7 @@ import com.flansmod.common.teams.Team;
 import com.flansmod.common.teams.TeamsManager;
 import com.flansmod.common.tools.ItemTool;
 import com.flansmod.common.vector.Vector3f;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
@@ -28,11 +31,13 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.*;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.DamageSource;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
-
-import java.util.List;
 
 
 public class EntityVehicle extends EntityDriveable implements IExplodeable {
@@ -1284,10 +1289,10 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
             vehicleStack.stackTagCompound = new NBTTagCompound();
             driveableData.writeToNBT(vehicleStack.stackTagCompound);
             
-            DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, vehicleStack, true);
-            MinecraftForge.EVENT_BUS.post(driveableDeathEvent);
+            DriveableDeathByHandEvent driveableDeathByHandEvent = new DriveableDeathByHandEvent(this, vehicleStack);
+            MinecraftForge.EVENT_BUS.post(driveableDeathByHandEvent);
             
-            if(!driveableDeathEvent.isCanceled()) {
+            if(!driveableDeathByHandEvent.isCanceled()) {
 	            if (!worldObj.isRemote && damagesource.getEntity() instanceof EntityPlayer) { FlansMod.log("Player %s broke vehicle %s (%d) at (%f, %f, %f)", ((EntityPlayerMP)damagesource.getEntity()).getDisplayName(), type.shortName, getEntityId(), posX, posY, posZ); }
 	            entityDropItem(vehicleStack, 0.5F);
 	            setDead();
@@ -1350,10 +1355,6 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
 
     @Override
     public void setDead() {
-    	DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, null, false);
-        MinecraftForge.EVENT_BUS.post(driveableDeathEvent);       
-        if(driveableDeathEvent.isCanceled()) return;
-    	
         super.setDead();
         for (EntityWheel wheel : wheels)
             if (wheel != null)
