@@ -4,19 +4,14 @@ import com.flansmod.client.model.animation.AnimationController;
 import com.flansmod.common.FlansMod;
 import com.flansmod.common.RotatedAxes;
 import com.flansmod.common.eventhandlers.DriveableDeathEvent;
-import com.flansmod.common.network.PacketDriveableControl;
-import com.flansmod.common.network.PacketDriveableKey;
-import com.flansmod.common.network.PacketParticle;
-import com.flansmod.common.network.PacketPlaneAnimator;
-import com.flansmod.common.network.PacketPlaneControl;
-import com.flansmod.common.network.PacketPlaySound;
+import com.flansmod.common.network.*;
 import com.flansmod.common.teams.TeamsManager;
 import com.flansmod.common.tools.ItemTool;
 import com.flansmod.common.vector.Matrix4f;
 import com.flansmod.common.vector.Vector3f;
-
 import cpw.mods.fml.common.FMLCommonHandler;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ChatComponentText;
@@ -85,7 +80,7 @@ public class EntityPlane extends EntityDriveable {
     public float ySpeed = 0;
     public float zSpeed = 0;
     public float rollSpeed = 0;
-    public FlightController control = new FlightController();
+    public FlightController flightController = new FlightController();
     public AnimationController anim = new AnimationController();
     public boolean initiatedAnim = false;
 
@@ -94,8 +89,8 @@ public class EntityPlane extends EntityDriveable {
         super(world);
     }
 
-    public EntityPlane(World world, double x, double y, double z, PlaneType type, DriveableData data) {
-        super(world, type, data);
+    public EntityPlane(World world, double x, double y, double z, PlaneType type, DriveableData data, EntityPlayer p) {
+        super(world, type, data,p);
         setPosition(x, y, z);
         prevPosX = x;
         prevPosY = y;
@@ -104,7 +99,7 @@ public class EntityPlane extends EntityDriveable {
     }
 
     public EntityPlane(World world, double x, double y, double z, EntityPlayer placer, PlaneType type, DriveableData data) {
-        this(world, x, y + 90 / 16F, z, type, data);
+        this(world, x, y + 90 / 16F, z, type, data,placer);
         rotateYaw(placer.rotationYaw + 90F);
         rotatePitch(type.restingPitch);
     }
@@ -215,7 +210,7 @@ public class EntityPlane extends EntityDriveable {
             FlansMod.getPacketHandler().sendToServer(new PacketDriveableKey(key));
             return true;
         }
-        boolean canThrust = (seats[0] != null && seats[0].riddenByEntity instanceof EntityPlayer && ((EntityPlayer) seats[0].riddenByEntity).capabilities.isCreativeMode) || getDriveableData().fuelInTank > 0;
+        boolean canThrust = ((seats[0] != null && seats[0].riddenByEntity instanceof EntityPlayer && ((EntityPlayer) seats[0].riddenByEntity).capabilities.isCreativeMode) || getDriveableData().fuelInTank > 0) && isEngineActive() || type.fuelTankSize < 0;
         switch (key) {
             case 0: //Accelerate : Increase the throttle, up to 1.
             {
@@ -273,8 +268,11 @@ public class EntityPlane extends EntityDriveable {
             }
             case 6: //Exit : Get out
             {
-                if (seats[0].riddenByEntity != null)
+                if (seats[0].riddenByEntity != null) {
+                    seats[0].riddenByEntity.setInvisible(false);
                     seats[0].riddenByEntity.mountEntity(null);
+                }
+                    
                 return true;
             }
             case 7: //Inventory : Check to see if this plane allows in-flight inventory editing or if the plane is on the ground
@@ -460,6 +458,9 @@ public class EntityPlane extends EntityDriveable {
                 && seats[0].riddenByEntity instanceof EntityPlayer
                 && FlansMod.proxy.isThePlayer((EntityPlayer) seats[0].riddenByEntity);
 
+        if (type.setPlayerInvisible && !this.worldObj.isRemote && seats[0].riddenByEntity != null)
+            seats[0].riddenByEntity.setInvisible(true);
+
         //Despawning
         ticksSinceUsed++;
         if (!worldObj.isRemote && seats[0].riddenByEntity != null)
@@ -526,12 +527,12 @@ public class EntityPlane extends EntityDriveable {
         }
 
         if (!worldObj.isAirBlock((int) posX, (int) (posY - 10), (int) posZ) && throttle <= 0.4) {
-            if (!varGear && seats[0].riddenByEntity != null && type.autoDeployLandingGearNearGround) {
+            if (!varGear && seats[0] != null && seats[0].riddenByEntity != null && type.autoDeployLandingGearNearGround) {
                 ((EntityPlayer) seats[0].riddenByEntity).addChatMessage(new ChatComponentText("Deploying landing gear"));
             }
             varGear = true;
             if (type.foldWingForLand) {
-                if (varWing && seats[0].riddenByEntity != null) {
+                if (varWing && seats[0] != null && seats[0].riddenByEntity != null) {
                     ((EntityPlayer) seats[0].riddenByEntity).addChatMessage(new ChatComponentText("Extending wings"));
                 }
                 varWing = false;
@@ -592,7 +593,7 @@ public class EntityPlane extends EntityDriveable {
 
         //Movement
 
-        boolean canThrust = (seats[0] != null && seats[0].riddenByEntity instanceof EntityPlayer && ((EntityPlayer) seats[0].riddenByEntity).capabilities.isCreativeMode) || data.fuelInTank > 0;
+        boolean canThrust = (seats[0] != null && seats[0].riddenByEntity instanceof EntityPlayer && ((EntityPlayer) seats[0].riddenByEntity).capabilities.isCreativeMode) || data.fuelInTank > 0 || type.fuelTankSize < 0;
 
         //Throttle handling
         //Without a player, default to 0
@@ -612,7 +613,7 @@ public class EntityPlane extends EntityDriveable {
                 throttle -= 0.001;
             }
         }
-        control.fly(this);
+        flightController.fly(this);
 
         double motion = Math.sqrt(motionX * motionX + motionY * motionY + motionZ * motionZ);
         if (motion > 10) {
@@ -771,14 +772,14 @@ public class EntityPlane extends EntityDriveable {
 
     @Override
     public void setDead() {
-    	DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, null, false);
-        MinecraftForge.EVENT_BUS.post(driveableDeathEvent);   	
+    	DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, null, true);
+        MinecraftForge.EVENT_BUS.post(driveableDeathEvent);       
         if(driveableDeathEvent.isCanceled()) return;
-        
+    	
         super.setDead();
         for (EntityWheel wheel : wheels)
             if (wheel != null)
-                wheel.setDead();   
+                wheel.setDead();
     }
 
     @Override
@@ -794,7 +795,8 @@ public class EntityPlane extends EntityDriveable {
 
         if (damagesource.damageType.equals("player")
                 && damagesource.getEntity().onGround
-                && (seats[0] == null || seats[0].riddenByEntity == null)) {
+                && (seats[0] == null || seats[0].riddenByEntity == null)
+                && ((damagesource.getEntity() instanceof EntityPlayer && ((EntityPlayer)damagesource.getEntity()).capabilities.isCreativeMode) || TeamsManager.survivalCanBreakVehicles)) {
             ItemStack planeStack = new ItemStack(type.item, 1, driveableData.paintjobID);
             planeStack.stackTagCompound = new NBTTagCompound();
             driveableData.writeToNBT(planeStack.stackTagCompound);
@@ -804,8 +806,10 @@ public class EntityPlane extends EntityDriveable {
             
             if(!driveableDeathEvent.isCanceled()) {
             	entityDropItem(planeStack, 0.5F);
+                if (!worldObj.isRemote && damagesource.getEntity() instanceof EntityPlayer) { FlansMod.log("Player %s broke plane %s (%d) at (%f, %f, %f)", ((EntityPlayerMP)damagesource.getEntity()).getDisplayName(), type.shortName, getEntityId(), posX, posY, posZ); }
                 setDead();
-            }            
+            } 
+            
         }
         return super.attackEntityFrom(damagesource, i);
     }

@@ -1,15 +1,23 @@
 package com.flansmod.common.driveables;
 
+import com.flansmod.api.IControllable;
+import com.flansmod.client.FlansModClient;
+import com.flansmod.common.FlansMod;
+import com.flansmod.common.RotatedAxes;
+import com.flansmod.common.eventhandlers.PlayerEnterSeatEvent;
+import com.flansmod.common.guns.*;
+import com.flansmod.common.network.*;
+import com.flansmod.common.teams.TeamsManager;
+import com.flansmod.common.tools.ItemTool;
+import com.flansmod.common.vector.Vector3f;
+import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
-
-import java.util.List;
-
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.EntityBodyHelper;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.client.model.ModelBase;
 import net.minecraft.item.ItemLead;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -20,28 +28,7 @@ import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 
-import com.flansmod.api.IControllable;
-import com.flansmod.client.FlansModClient;
-import com.flansmod.common.FlansMod;
-import com.flansmod.common.RotatedAxes;
-import com.flansmod.common.eventhandlers.DriveableDeathEvent;
-import com.flansmod.common.eventhandlers.PlayerEnterSeatEvent;
-import com.flansmod.common.guns.EnumFireMode;
-import com.flansmod.common.guns.GunType;
-import com.flansmod.common.guns.ItemShootable;
-import com.flansmod.common.guns.ShootableType;
-import com.flansmod.common.network.PacketDriveableKey;
-import com.flansmod.common.network.PacketDriveableKeyHeld;
-import com.flansmod.common.network.PacketPlaySound;
-import com.flansmod.common.network.PacketSeatCheck;
-import com.flansmod.common.network.PacketSeatUpdates;
-import com.flansmod.common.teams.TeamsManager;
-import com.flansmod.common.tools.ItemTool;
-import com.flansmod.common.vector.Vector3f;
-
-import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import java.util.List;
 
 public class EntitySeat extends Entity implements IControllable, IEntityAdditionalSpawnData {
     /**
@@ -115,8 +102,6 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
     public float targetYaw = 0;
 
     public float targetPitch = 0;
-
-    public boolean artillery = false;
 
     public int timeLimitDriveableNull = 0;
 
@@ -224,18 +209,18 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
 
         //updatePosition();
 
-        if (playYawSound == true && yawSoundDelay == 0 && seatInfo.traverseSounds == true && !driveable.disabled) {
+        if (playYawSound && yawSoundDelay == 0 && seatInfo.traverseSounds && !driveable.disabled) {
             PacketPlaySound.sendSoundPacket(posX, posY, posZ, 50, dimension, seatInfo.yawSound, false);
             yawSoundDelay = seatInfo.yawSoundLength;
         }
 
-        if (playPitchSound == true && pitchSoundDelay == 0 && seatInfo.traverseSounds == true && !driveable.disabled) {
+        if (playPitchSound && pitchSoundDelay == 0 && seatInfo.traverseSounds && !driveable.disabled) {
             PacketPlaySound.sendSoundPacket(posX, posY, posZ, 50, dimension, seatInfo.pitchSound, false);
             pitchSoundDelay = seatInfo.pitchSoundLength;
         }
 
         //Reset traverse sounds if player exits the vehicle
-        if (riddenByEntity instanceof EntityPlayer == false || !FlansMod.proxy.isThePlayer((EntityPlayer) riddenByEntity)) {
+        if (!(riddenByEntity instanceof EntityPlayer) || !FlansMod.proxy.isThePlayer((EntityPlayer) riddenByEntity)) {
             playYawSound = false;
             playPitchSound = false;
             yawSoundDelay = 0;
@@ -410,7 +395,7 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
     public void onMouseMoved(int deltaX, int deltaY) {
         if (!foundDriveable)
             return;
-        
+
         prevLooking = looking.clone();
         prevPlayerLooking = playerLooking.clone();
 
@@ -480,15 +465,14 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
 
 
             float yawToMove = (targetX - looking.getYaw());
-            for (; yawToMove > 180F; yawToMove -= 360F) {
-            }
-            for (; yawToMove <= -180F; yawToMove += 360F) {
-            }
+
+            while (yawToMove > 180F) { yawToMove -= 360F; }
+            while (yawToMove <= -180F) { yawToMove += 360F; }
 
             float signDeltaX = 0;
-            if (yawToMove > (seatInfo.aimingSpeed.x / 2) && seatInfo.legacyAiming == false) {
+            if (yawToMove > (seatInfo.aimingSpeed.x / 2) && !seatInfo.legacyAiming) {
                 signDeltaX = 1;
-            } else if (yawToMove < -(seatInfo.aimingSpeed.x / 2) && seatInfo.legacyAiming == false) {
+            } else if (yawToMove < -(seatInfo.aimingSpeed.x / 2) && !seatInfo.legacyAiming) {
                 signDeltaX = -1;
             } else {
                 signDeltaX = 0;
@@ -497,7 +481,7 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
             //Calculate new yaw and consider yaw limiters
             float newYaw = 0f;
 
-            if (seatInfo.legacyAiming == true || (signDeltaX == 0 && deltaX == 0)) {
+            if (seatInfo.legacyAiming || (signDeltaX == 0 && deltaX == 0)) {
                 newYaw = targetX;
             } else {
                 newYaw = looking.getYaw() + signDeltaX * seatInfo.aimingSpeed.x;
@@ -538,15 +522,13 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
                 targetY = targetPitch;
 
             float pitchToMove = (targetY - looking.getPitch());
-            for (; pitchToMove > 180F; pitchToMove -= 360F) {
-            }
-            for (; pitchToMove <= -180F; pitchToMove += 360F) {
-            }
+            while (pitchToMove > 180F) { pitchToMove -= 360F; }
+            while (pitchToMove <= -180F) { pitchToMove += 360F; }
 
             float signDeltaY = 0;
-            if (pitchToMove > (seatInfo.aimingSpeed.y / 2) && seatInfo.legacyAiming == false) {
+            if (pitchToMove > (seatInfo.aimingSpeed.y / 2) && !seatInfo.legacyAiming) {
                 signDeltaY = 1;
-            } else if (pitchToMove < -(seatInfo.aimingSpeed.y / 2) && seatInfo.legacyAiming == false) {
+            } else if (pitchToMove < -(seatInfo.aimingSpeed.y / 2) && !seatInfo.legacyAiming) {
                 signDeltaY = -1;
             } else {
                 signDeltaY = 0;
@@ -568,13 +550,13 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
 
             currentYawToMove = (float) Math.sqrt((yawToMove) * (yawToMove));
 
-            if (seatInfo.legacyAiming == true || (signDeltaY == 0 && deltaY == 0)) {
+            if (seatInfo.legacyAiming || (signDeltaY == 0 && deltaY == 0)) {
                 newPitch = targetY;
-            } else if (seatInfo.yawBeforePitch == false && currentYawToMove < minYawToMove || !FlansModClient.controlModeMouse) {
+            } else if (!seatInfo.yawBeforePitch && currentYawToMove < minYawToMove || !FlansModClient.controlModeMouse) {
                 newPitch = looking.getPitch() + signDeltaY * seatInfo.aimingSpeed.y;
-            } else if (seatInfo.yawBeforePitch == true && signDeltaX == 0) {
+            } else if (seatInfo.yawBeforePitch && signDeltaX == 0) {
                 newPitch = looking.getPitch() + signDeltaY * seatInfo.aimingSpeed.y;
-            } else if (seatInfo.yawBeforePitch == true && signDeltaX != 0) {
+            } else if (seatInfo.yawBeforePitch) {
                 newPitch = looking.getPitch();
             } else {
                 newPitch = looking.getPitch();
@@ -586,21 +568,15 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
                 newPitch = -seatInfo.maxPitch;
 
             //Now set the new angles
-            if ((driveable instanceof EntityVehicle && ((EntityVehicle) driveable).target == null) || !(driveable instanceof EntityVehicle))
+            if (!(driveable instanceof EntityVehicle) || ((EntityVehicle) driveable).target == null)
                 looking.setAngles(newYaw, newPitch, 0F);
-            
-            if (signDeltaX != 0 && seatInfo.traverseSounds == true) {
-                playYawSound = true;
-            } else {
-                playYawSound = false;
-            }
 
-            if (signDeltaY != 0 && seatInfo.yawBeforePitch == false && currentYawToMove < minYawToMove) {
-                playPitchSound = true;
-            } else if (signDeltaY != 0 && seatInfo.yawBeforePitch == true && signDeltaX == 0) {
+            playYawSound = signDeltaX != 0 && seatInfo.traverseSounds;
+
+            if (signDeltaY != 0 && !seatInfo.yawBeforePitch && currentYawToMove < minYawToMove) {
                 playPitchSound = true;
             } else {
-                playPitchSound = false;
+                playPitchSound = signDeltaY != 0 && seatInfo.yawBeforePitch && signDeltaX == 0;
             }
 
             if ((driveable instanceof EntityVehicle && ((EntityVehicle) driveable).target != null)) {
@@ -673,7 +649,25 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
                                 //Calculate the origin of the bullets
                                 Vector3f yOffset = driveable.axes.findLocalVectorGlobally(new Vector3f(0F, (float) player.getMountedYOffset(), 0F));
                                 //Spawn a new bullet item
-                                worldObj.spawnEntityInWorld(((ItemShootable) bulletItemStack.getItem()).getEntity(worldObj, Vector3f.add(yOffset, new Vector3f(gunOrigin.x, gunOrigin.y, gunOrigin.z), null), shootVec, (EntityLivingBase) riddenByEntity, gun.bulletSpread, gun.damage, gun.bulletSpeed, bulletItemStack.getItemDamage(), driveable.getDriveableType()));
+
+                                float spread = gun.bulletSpread;
+                                float bulletSpeed = gun.bulletSpeed;
+                                float numBullets = gun.numBullets;
+                                if (bullet instanceof BulletType) {
+                                    bulletSpeed *= ((BulletType) bullet).speedMultiplier;
+
+                                    if (gun.allowSpreadByBullet && ((BulletType) bullet).bulletSpread != -1) {
+                                        spread = ((BulletType) bullet).bulletSpread;
+                                    }
+
+                                    if (gun.allowNumBulletsByBulletType && ((BulletType) bullet).numBullets != -1) {
+                                        numBullets = ((BulletType) bullet).numBullets;
+                                    }
+                                }
+
+                                for (int i=0; i<numBullets; i++) {
+                                    worldObj.spawnEntityInWorld(((ItemShootable) bulletItemStack.getItem()).getEntity(worldObj, Vector3f.add(yOffset, new Vector3f(gunOrigin.x, gunOrigin.y, gunOrigin.z), null), shootVec, (EntityLivingBase) riddenByEntity, spread, gun.damage, bulletSpeed, bulletItemStack.getItemDamage(), driveable.getDriveableType()));
+                                }
                                 //Play the shoot sound
                                 if (soundDelay <= 0) {
                                     PacketPlaySound.sendSoundPacket(posX, posY, posZ, gun.gunSoundRange, dimension, gun.shootSound, false);
@@ -684,21 +678,28 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
                                     }
                                     soundDelay = gun.shootSoundLength;
                                 }
+
                                 //Get the bullet item damage and increment it
                                 int damage = bulletItemStack.getItemDamage();
                                 if (!((EntityPlayer) riddenByEntity).capabilities.isCreativeMode)
                                     bulletItemStack.setItemDamage(damage + 1);
                                 //If the bullet item is completely damaged (empty)
                                 if (damage >= bulletItemStack.getMaxDamage()) {
+                                    bulletItemStack.setItemDamage(0);
                                     //Set the damage to 0 and consume one ammo item (unless in creative)
-                                    if (((EntityPlayer) riddenByEntity).capabilities.isCreativeMode) {
-                                        bulletItemStack.setItemDamage(0);
-                                    } else {
-                                        driveable.getDriveableData().ammo[seatInfo.gunnerID] = null;
+                                    if (!((EntityPlayer) riddenByEntity).capabilities.isCreativeMode) {
+                                        driveable.getDriveableData().ammo[seatInfo.gunnerID].stackSize--;
+                                        if (driveable.getDriveableData().ammo[seatInfo.gunnerID].stackSize <= 0) {
+                                           driveable.getDriveableData().ammo[seatInfo.gunnerID] = null; 
+                                        }
                                     }
+                                    gunDelay += gun.getReloadTime(bulletItemStack);
+                                    PacketPlaySound.sendSoundPacket(posX, posY, posZ, gun.reloadSoundRange, dimension, gun.reloadSound, true);
+                                } else {
+                                    //Reset the shoot delay
+                                    gunDelay += gun.getShootDelay();
                                 }
-                                //Reset the shoot delay
-                                gunDelay += gun.getShootDelay();
+                                
                             }
                         }
                     }
@@ -712,11 +713,11 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
     @Override
     public boolean interactFirst(EntityPlayer entityplayer) //interact : change back when Forge updates
     {
-    	 PlayerEnterSeatEvent playerEnterSeatEvent = new PlayerEnterSeatEvent(this, entityplayer);
-         MinecraftForge.EVENT_BUS.post(playerEnterSeatEvent);
-         if(playerEnterSeatEvent.isCanceled()) return false;
+    	PlayerEnterSeatEvent playerEnterSeatEvent = new PlayerEnterSeatEvent(this, entityplayer);
+        MinecraftForge.EVENT_BUS.post(playerEnterSeatEvent);
+        if(playerEnterSeatEvent.isCanceled()) return false;
     	
-        if (isDead)
+    	if (isDead)
             return false;
         if (worldObj.isRemote)
             return false;
@@ -727,7 +728,7 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
         if (currentItem != null && currentItem.getItem() instanceof ItemTool && ((ItemTool) currentItem.getItem()).type.key)
             return true;
         if (currentItem != null && currentItem.getItem() instanceof ItemLead) {
-            if (riddenByEntity != null && riddenByEntity instanceof EntityLiving && !(riddenByEntity instanceof EntityPlayer)) {
+            if (riddenByEntity != null && riddenByEntity instanceof EntityLiving) {
                 EntityLiving mob = (EntityLiving) riddenByEntity;
                 riddenByEntity.mountEntity(null);
                 mob.setLeashedToEntity(entityplayer, true);
@@ -810,8 +811,8 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
 
     @Override
     public float getPlayerRoll() {
-        for (; playerRoll - prevPlayerRoll > 180F; playerRoll -= 360F) ;
-        for (; playerRoll - prevPlayerRoll < -180F; playerRoll += 360F) ;
+        while (playerRoll - prevPlayerRoll > 180F) { playerRoll -= 360F; }
+        while (playerRoll - prevPlayerRoll < -180F) { playerRoll += 360F; }
         return playerRoll;
     }
 
@@ -850,6 +851,11 @@ public class EntitySeat extends Entity implements IControllable, IEntityAddition
 
     public float getMinigunSpeed() {
         return minigunSpeed;
+    }
+
+    public DriveablePosition getAsDriveablePosition() {
+        // This is in LOCAL space.
+        return new DriveablePosition(new Vector3f(((float)seatInfo.x) / 16F, ((float)seatInfo.y)/16F, ((float)seatInfo.y)/16F), seatInfo.part);
     }
 
 }

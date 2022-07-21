@@ -1,7 +1,5 @@
 package com.flansmod.common.driveables;
 
-import java.util.List;
-
 import com.flansmod.api.IExplodeable;
 import com.flansmod.client.model.AnimTankTrack;
 import com.flansmod.client.model.AnimTrackLink;
@@ -19,7 +17,6 @@ import com.flansmod.common.teams.Team;
 import com.flansmod.common.teams.TeamsManager;
 import com.flansmod.common.tools.ItemTool;
 import com.flansmod.common.vector.Vector3f;
-
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
@@ -31,13 +28,11 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.MathHelper;
-import net.minecraft.util.Vec3;
+import net.minecraft.util.*;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
+
+import java.util.List;
 
 
 public class EntityVehicle extends EntityDriveable implements IExplodeable {
@@ -126,7 +121,7 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
 
     //This one deals with spawning from a vehicle spawner
     public EntityVehicle(World world, double x, double y, double z, VehicleType type, DriveableData data) {
-        super(world, type, data);
+        super(world, type, data,null);
         stepHeight = 1.0F;
         setPosition(x, y, z);
         initType(type, false);
@@ -134,7 +129,7 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
 
     //This one allows you to deal with spawning from items
     public EntityVehicle(World world, double x, double y, double z, EntityPlayer p, VehicleType type, DriveableData data) {
-        super(world, type, data);
+        super(world, type, data,p);
         placer = p;
         placerName = p.getCommandSenderName();
         stepHeight = 1.0F;
@@ -185,12 +180,6 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
     protected void readEntityFromNBT(NBTTagCompound tag) {
         super.readEntityFromNBT(tag);
         varDoor = tag.getBoolean("VarDoor");
-    }
-
-    @Override
-    public boolean isInRangeToRenderDist(double d) {
-        double d1 = 400D;
-        return d < d1 * d1;
     }
 
     /**
@@ -247,22 +236,34 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
         switch (key) {
             case 0: //Accelerate : Increase the throttle, up to 1.
             {
-                if (type.useRealisticAcceleration) {
-                    throttle += data.engine.enginePower / type.mass;
-                } else {
-                    throttle += 0.01F;
+                if (isEngineActive()) {
+                    if (type.useRealisticAcceleration) {
+                        throttle += (data.engine.enginePower * (throttle < 0 ? type.brakingModifier : 1))  / type.mass;
+                    } else {
+                        throttle += 0.01F * (throttle < 0 ? type.brakingModifier : 1);
+                    }
                 }
+
                 if (throttle > 1F)
                     throttle = 1F;
+
                 return true;
             }
             case 1: //Decelerate : Decrease the throttle, down to -1, or 0 if the vehicle cannot reverse
             {
-                throttle -= 0.01F;
+                if (isEngineActive()) {
+                    if (type.useRealisticAcceleration) {
+                        throttle -= (data.engine.enginePower * (throttle > 0 ? type.brakingModifier : 1)) / type.mass;
+                    } else {
+                        throttle -= 0.01F * (throttle > 0 ? type.brakingModifier : 1);
+                    }
+                }
+
                 if (throttle < -1F)
                     throttle = -1F;
                 if (throttle < 0F && type.maxNegativeThrottle == 0F)
                     throttle = 0F;
+
                 return true;
             }
             case 2: //Left : Yaw the wheels left
@@ -314,6 +315,7 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
                 seats[0].riddenByEntity.setInvisible(false);
                 //resetZoom();
                 seats[0].riddenByEntity.mountEntity(null);
+                PacketPlaySound.sendSoundPacket(posX, posY, posZ, FlansMod.soundRange, dimension, type.exitSound, false);
                 return true;
             }
             case 7: //Inventory
@@ -422,7 +424,6 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
         double bkPrevPosY = this.prevPosY;
 
         super.onUpdate();
-        this.renderDistanceWeight = 4000.0D;
         animateFancyTracks();
         if (worldObj.isRemote) {
             for (Entity e : findEntitiesWithinbounds()) {
@@ -487,13 +488,13 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
         if (soundPosition > 0)
             soundPosition--;
         if (idlePosition > 0)
-            idlePosition--;
+            idlePosition--;		
 
         if (type.tank && !hasBothTracks()) throttle = 0;
         if (disabled || !hasBothTracks()) wheelsYaw = 0;
 
         //Rotate the wheels
-        if (hasEnoughFuel()) {
+        if (hasEnoughFuel() && isEngineActive()) {
             wheelsAngle += throttle / 3.25F;
         }
 
@@ -573,9 +574,9 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
 
             //Apply velocity
             //If the player driving this is in creative, then we can thrust, no matter what
-            boolean canThrustCreatively = !TeamsManager.vehiclesNeedFuel || (seats != null && seats[0] != null && seats[0].riddenByEntity instanceof EntityPlayer && ((EntityPlayer) seats[0].riddenByEntity).capabilities.isCreativeMode);
+            boolean canThrustCreatively = !TeamsManager.vehiclesNeedFuel || type.fuelTankSize < 0 || (seats != null && seats[0] != null && seats[0].riddenByEntity instanceof EntityPlayer && ((EntityPlayer) seats[0].riddenByEntity).capabilities.isCreativeMode);
             //Otherwise, check the fuel tanks!
-            if (canThrustCreatively || data.fuelInTank > Math.abs(data.engine.fuelConsumption * throttle)) {
+            if ((canThrustCreatively || type.fuelTankSize < 0 || data.fuelInTank > Math.abs(data.engine.fuelConsumption * throttle)) && isEngineActive()) {
                 if (getVehicleType().tank) {
                     boolean left = wheel.ID == 0 || wheel.ID == 3;
 
@@ -659,19 +660,30 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
             }
 
             //Now we apply gravity
-            if (allWheelsOnGround && !(type.floatOnWater && worldObj.isAnyLiquid(wheel.boundingBox.copy().offset(0, -type.floatOffset, 0))) && !wheel.onDeck) {
-                fallVelocity -= 0.98 / 5;
-                wheel.moveEntity(0F, fallVelocity, 0F);
+            if (!(type.floatOnWater && worldObj.isAnyLiquid(wheel.boundingBox.copy().offset(0, -type.floatOffset, 0))) && !wheel.onDeck) {
+                float a = type.maxFallSpeed;
+                float g = type.gravity;
+
+                if (wheel.onGround) {
+                    a *= 1F/2F;
+                    g *= 3/2F;
+                }
+
+                if (wheel.motionY >= 0) {
+                    wheel.motionY -= g;
+                }  else if (wheel.motionY >= -a) {
+                    wheel.motionY -= g * (wheel.motionY + a);
+                }
+
             } else if ((type.floatOnWater && worldObj.isAnyLiquid(wheel.boundingBox.copy().offset(0, -type.floatOffset, 0))) && worldObj.isAnyLiquid(wheel.boundingBox.copy().offset(0, 1 - type.floatOffset, 0)) && !wheel.onDeck) {
                 wheel.moveEntity(0F, 1F, 0F);
             } else if ((type.floatOnWater && worldObj.isAnyLiquid(wheel.boundingBox.copy().offset(0, -type.floatOffset, 0))) && !worldObj.isAnyLiquid(wheel.boundingBox.copy().offset(0, 1 - type.floatOffset, 0)) || wheel.onDeck) {
                 wheel.moveEntity(0F, 0F, 0F);
                 this.roll = 0;
                 this.pitch = 0;
-            } else {
-                fallVelocity = 0;
-                wheel.moveEntity(0F, (!onDeck) ? -0.98F : 0, 0F);
-            }
+            }/* else {
+                wheel.moveEntity(0F, (!onDeck) ? -1.2F : 0, 0F);
+            }*/
 
             if ((throttle >= 1.1 || throttle <= -1.1)) {
                 Vector3f motionVec = new Vector3f(0, 0, 0);
@@ -704,7 +716,11 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
 
         double bmy = this.motionY;
         this.motionY = amountToMoveCar.y;
-
+        if (collisionHardness > 0.2F) {
+            amountToMoveCar.x = -axes.getXAxis().x*(float)getSpeedXZ()*0.1F;
+            amountToMoveCar.z = -axes.getXAxis().z*(float)getSpeedXZ()*0.1F;
+        }
+        collisionHardness = 0F;
         moveEntity(amountToMoveCar.x, amountToMoveCar.y, amountToMoveCar.z);
 
         this.motionY = bmy;
@@ -752,10 +768,17 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
             roll = Lerp(roll, troll, 0.2F);
 
             if (type.tank) {
-                float velocityScale = 0.04F * (throttle > 0 ? type.maxThrottle : type.maxNegativeThrottle) * data.engine.engineSpeed;
-                float steeringScale = 0.1F * (wheelsYaw > 0 ? type.turnLeftModifier : type.turnRightModifier);
-                float effectiveWheelSpeed = ((wheelsYaw * steeringScale)) * velocityScale;
-                yaw = axes.getYaw() / 180F * 3.14159F + (effectiveWheelSpeed);
+                float effectiveWheelSpeed;
+                if (isEngineActive()) {
+                    float velocityScale = 0.04F * (throttle > 0 ? type.maxThrottle : type.maxNegativeThrottle)
+                            * data.engine.engineSpeed;
+                    float steeringScale = 0.1F * (wheelsYaw > 0 ? type.turnLeftModifier : type.turnRightModifier);
+                    effectiveWheelSpeed = ((wheelsYaw * steeringScale)) * velocityScale;
+                } else {
+                    effectiveWheelSpeed = 0;
+                }  
+
+                yaw = axes.getYaw() / 180F * 3.14159F + effectiveWheelSpeed;
             } else {
                 float velocityScale = 0.1F * throttle * (throttle > 0 ? type.maxThrottle : type.maxNegativeThrottle) * data.engine.engineSpeed;
                 float steeringScale = 0.1F * (wheelsYaw > 0 ? type.turnLeftModifier : type.turnRightModifier);
@@ -781,7 +804,7 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
             soundPosition = type.startSoundLength;
         }
         //Flying sound
-        if (throttle >= 0.2F && soundPosition == 0 && hasEnoughFuel()) {
+        if (throttle >= 0.2F && soundPosition == 0 && hasEnoughFuel() && isEngineActive()) {
             PacketPlaySound.sendSoundPacket(posX, posY, posZ, type.engineSoundRange, dimension, type.engineSound, false);
             soundPosition = type.engineSoundLength;
         }
@@ -792,7 +815,7 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
             }
         }
         //Back sound
-        if (throttle <= -0.2F && soundPosition == 0 && hasEnoughFuel()) {
+        if (throttle <= -0.2F && soundPosition == 0 && hasEnoughFuel() && isEngineActive()) {
             PacketPlaySound.sendSoundPacket(posX, posY, posZ, type.backSoundRange, dimension, type.backSound, false);
             soundPosition = type.backSoundLength;
         }
@@ -848,7 +871,7 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
             animCountLeft++;
             animCountRight--;
             animSpeed = 1;
-            if (soundPosition == 0 && hasEnoughFuel() && type.tank) {
+            if (soundPosition == 0 && hasEnoughFuel() && type.tank && isEngineActive()) {
                 PacketPlaySound.sendSoundPacket(posX, posY, posZ, type.engineSoundRange, dimension, type.engineSound, false);
                 soundPosition = type.engineSoundLength;
             }
@@ -857,7 +880,7 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
             animCountLeft--;
             animCountRight++;
             animSpeed = 1;
-            if (soundPosition == 0 && hasEnoughFuel() && type.tank) {
+            if (soundPosition == 0 && hasEnoughFuel() && type.tank && isEngineActive() && isEngineActive()) {
                 PacketPlaySound.sendSoundPacket(posX, posY, posZ, type.engineSoundRange, dimension, type.engineSound, false);
                 soundPosition = type.engineSoundLength;
             }
@@ -989,7 +1012,7 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
          }
          */
 
-        //rotateYaw(10);
+        //rotateYaw(10);        
     }
 
     public Entity getValidTarget() {
@@ -1222,14 +1245,13 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
 
     private float averageAngles(float a, float b) {
         float pi = (float) Math.PI;
-        for (; a > b + pi; a -= 2 * pi) ;
-        for (; a < b - pi; a += 2 * pi) ;
+        while (a > b + pi) { a -= 2 * pi; }
+        while (a < b - pi) { a += 2 * pi; }
 
         float avg = (a + b) / 2F;
 
-        for (; avg > pi; avg -= 2 * pi) ;
-        for (; avg < -pi; avg += 2 * pi) ;
-
+        while (avg > pi) { avg -= 2 * pi; }
+        while (avg < -pi) { avg += 2 * pi; }
 
         return avg;
     }
@@ -1254,7 +1276,10 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
 
         VehicleType type = getVehicleType();
 
-        if (damagesource.damageType.equals("player") && damagesource.getEntity().onGround && (seats[0] == null || seats[0].riddenByEntity == null)) {
+        if (damagesource.damageType.equals("player")
+                && damagesource.getEntity().onGround
+                && (seats[0] == null || seats[0].riddenByEntity == null)
+                && ((damagesource.getEntity() instanceof EntityPlayer && ((EntityPlayer)damagesource.getEntity()).capabilities.isCreativeMode) || TeamsManager.survivalCanBreakVehicles)) {
             ItemStack vehicleStack = new ItemStack(type.item, 1, driveableData.paintjobID);
             vehicleStack.stackTagCompound = new NBTTagCompound();
             driveableData.writeToNBT(vehicleStack.stackTagCompound);
@@ -1263,9 +1288,11 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
             MinecraftForge.EVENT_BUS.post(driveableDeathEvent);
             
             if(!driveableDeathEvent.isCanceled()) {
-            	entityDropItem(vehicleStack, 0.5F);
-                setDead();
-            } 
+	            if (!worldObj.isRemote && damagesource.getEntity() instanceof EntityPlayer) { FlansMod.log("Player %s broke vehicle %s (%d) at (%f, %f, %f)", ((EntityPlayerMP)damagesource.getEntity()).getDisplayName(), type.shortName, getEntityId(), posX, posY, posZ); }
+	            entityDropItem(vehicleStack, 0.5F);
+	            setDead();
+            }
+            
         }
         return super.attackEntityFrom(damagesource, i);
     }
@@ -1277,12 +1304,6 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
     @Override
     public float getPlayerRoll() {
         return axes.getRoll();
-    }
-
-    public float getAvgWheelSpeedXYZ() {
-        float speed = (float) (wheels[0].getSpeedXYZ() + wheels[1].getSpeedXYZ() + wheels[2].getSpeedXYZ() + wheels[3].getSpeedXYZ()) / 4;
-
-        return speed;
     }
 
     public void Recoil() {
@@ -1329,13 +1350,13 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
 
     @Override
     public void setDead() {
-    	DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, null, false);
-        MinecraftForge.EVENT_BUS.post(driveableDeathEvent);
+    	DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, null, true);
+        MinecraftForge.EVENT_BUS.post(driveableDeathEvent);       
         if(driveableDeathEvent.isCanceled()) return;
-        
+    	
         super.setDead();
         for (EntityWheel wheel : wheels)
             if (wheel != null)
-                wheel.setDead();            
+                wheel.setDead();
     }
 }
