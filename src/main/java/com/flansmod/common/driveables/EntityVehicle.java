@@ -1350,7 +1350,7 @@ public class EntityVehicle extends EntityDriveable implements IExplodeable {
 
     @Override
     public void setDead() {
-    	DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, null, true);
+    	DriveableDeathEvent driveableDeathEvent = new DriveableDeathEvent(this, null, false);
         MinecraftForge.EVENT_BUS.post(driveableDeathEvent);       
         if(driveableDeathEvent.isCanceled()) return;
     	
