@@ -306,21 +306,6 @@ public class BulletType extends ShootableType
 		}
 	}
 	
-	public float getDamageAffectedByPenetration(EntityBullet bullet, float penetrationLost, float penetrationEffectOnDamage) {
-		if(penetrationEffectOnDamage > 0 && this.penetratingPower > 0 && bullet.penetratingPower >= 0 && penetrationLost > 0) {
-			//The amount of penetration that is left in reference to the initial value
-			float penetrationLeftPercentage = 1 - (penetrationLost/this.penetratingPower);
-			
-			if(penetrationLeftPercentage < 1) {
-				//if 'penetrationEffectOnDamage' is less than 1, we increase penetrationLeftPercentage, to increase bullet damage
-				float addition = (1-penetrationLeftPercentage) * (1-penetrationEffectOnDamage);
-				
-				return (bullet.damage * (penetrationLeftPercentage + addition) );
-			}
-        }
-		return bullet.damage;
-	}
-	
 	public static BulletType getBullet(String s)
 	{
 		for(BulletType bullet : bullets)

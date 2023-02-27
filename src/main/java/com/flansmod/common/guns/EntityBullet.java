@@ -19,6 +19,7 @@ import com.flansmod.common.driveables.mechas.EntityMecha;
 import com.flansmod.common.eventhandlers.BulletHitEvent;
 import com.flansmod.common.eventhandlers.BulletLockOnEvent;
 import com.flansmod.common.eventhandlers.GunReloadEvent;
+import com.flansmod.common.guns.PenetrationLoss.PenetrationLossType;
 import com.flansmod.common.guns.raytracing.BlockHit;
 import com.flansmod.common.guns.raytracing.BulletHit;
 import com.flansmod.common.guns.raytracing.DriveableHit;
@@ -75,8 +76,6 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
      * What type of weapon did this come from? For death messages
      */
     public InfoType firedFrom;
-    
-    public float initialDamage;
     /**
      * The amount of damage the gun imparted upon the bullet. Multiplied by the bullet damage to get total damage
      */
@@ -117,6 +116,12 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
 
     public float penetratingPower;
 
+    /*
+     * When the bullet loses penetration, the cause and amount is saved to this list
+     */
+    public ArrayList<PenetrationLoss> penetrationLosses = new ArrayList<>();
+    
+    
     public int submunitionDelay = 20;
     public boolean hasSetSubDelay = false;
 
@@ -148,7 +153,6 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
         type = bulletType;
         firedFrom = shotFrom;
         damage = gunDamage;
-        initialDamage = gunDamage;
         penetratingPower = type.penetratingPower;
         setSize(bulletType.hitBoxSize, bulletType.hitBoxSize);
     }
@@ -188,7 +192,6 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
     public EntityBullet(World world, Vector3f origin, Vector3f direction, EntityLivingBase shooter, float spread, float gunDamage, BulletType type1, float speed, InfoType shotFrom) {
         this(world, shooter, gunDamage, type1, shotFrom);
         damage = gunDamage;
-        initialDamage = gunDamage;
         setPosition(origin.x, origin.y, origin.z);
         motionX = direction.x;
         motionY = direction.y;
@@ -661,8 +664,7 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
                     float prevPenetratingPower = penetratingPower;
                     penetratingPower = playerHit.hitbox.hitByBullet(this, penetratingPower);
                     
-                    //Reduce damage of the bullet if player penetration has an effect on damage
-                    damage = type.getDamageAffectedByPenetration(this, (prevPenetratingPower-penetratingPower), type.playerPenetrationEffectOnDamage);
+                    penetrationLosses.add(new PenetrationLoss((prevPenetratingPower-penetratingPower), PenetrationLossType.PLAYER));
                     
                     if (FlansMod.DEBUG)
                         worldObj.spawnEntityInWorld(new EntityDebugDot(worldObj, new Vector3f(posX + motionX * playerHit.intersectTime, posY + motionY * playerHit.intersectTime, posZ + motionZ * playerHit.intersectTime), 1000, 1F, 0F, 0F));
@@ -678,7 +680,8 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
                     }
 
                     EntityHit entityHit = (EntityHit) bulletHit;
-                    float d = damage;
+                    float d = getDamageAffectedByPenetration();
+                    
                     if (entityHit.entity instanceof EntityLivingBase) {
                         d *= type.damageVsLiving;
                         if (entityHit.entity != owner)
@@ -687,6 +690,7 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
                     } else {
                         d *= type.damageVsEntity;
                     }
+                    
                     if (entityHit.entity.attackEntityFrom(getBulletDamage(false), d) && entityHit.entity instanceof EntityLivingBase) {
                         EntityLivingBase living = (EntityLivingBase) entityHit.entity;
                         for (PotionEffect effect : type.hitEffects) {
@@ -700,14 +704,13 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
                         entityHit.entity.setFire(20);
                     penetratingPower -= 1F;
                     
-                    //Reduce damage of the bullet if entity penetration has an effect on damage
-                    damage = type.getDamageAffectedByPenetration(this, 1F, type.entityPenetrationEffectOnDamage);
+                    penetrationLosses.add(new PenetrationLoss(1F, PenetrationLossType.ENTITY));
                     
                     if (FlansMod.DEBUG) {
                         worldObj.spawnEntityInWorld(new EntityDebugDot(worldObj, new Vector3f(posX + motionX * entityHit.intersectTime, posY + motionY * entityHit.intersectTime, posZ + motionZ * entityHit.intersectTime), 1000, 1F, 1F, 0F));
                         FlansMod.log(entityHit.entity.toString() + ": d=" + d + ": damage=" + damage + ": type.damageVsEntity=" + type.damageVsEntity);
                     }    
-                } else if (bulletHit instanceof BlockHit) {             	
+                } else if (bulletHit instanceof BlockHit) {     
                     BlockHit blockHit = (BlockHit) bulletHit;
                     MovingObjectPosition raytraceResult = blockHit.raytraceResult;                    
                     Vec3 hitVec = raytraceResult.hitVec;
@@ -741,8 +744,7 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
                         	FlansMod.proxy.playBlockBreakSound(xTile, yTile, zTile, block, this.dimension);
                         	if(penetrableBlock.breaks()) worldObj.setBlockToAir(xTile, yTile, zTile);  
                         	               
-                        	//Reduce damage of the bullet if block penetration has an effect on damage
-                    		damage = type.getDamageAffectedByPenetration(this, hardness, type.blockPenetrationEffectOnDamage); 
+                        	penetrationLosses.add(new PenetrationLoss(hardness, PenetrationLossType.BLOCK));
                         	
                         	penetrableBlockFound = true;
                         }
@@ -915,9 +917,10 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
         float prevPenetratingPower = penetratingPower;
         penetratingPower *= (1 - type.penetrationDecay);
         
-        //Reduce damage of the bullet if penetration decay has an effect on damage
-        damage = type.getDamageAffectedByPenetration(this, (prevPenetratingPower-penetratingPower), type.penetrationDecayEffectOnDamage);
-
+        if(type.penetrationDecay > 0) {
+        	penetrationLosses.add(new PenetrationLoss((prevPenetratingPower-penetratingPower), PenetrationLossType.DECAY));
+        }
+        
         // Apply homing action
         if (lockedOnTo != null) {
             if (lockedOnTo instanceof EntityDriveable) {
@@ -1477,7 +1480,7 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
                     new Vector3f(motionX, motionY, motionZ),
                     entityplayer,
                     type.submunitionSpread,
-                    initialDamage,
+                    damage,
                     speedA,
                     0,
                     firedFrom));
@@ -1553,6 +1556,31 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
     public boolean isBurning() {
         return false;
     }
+    
+    /*
+     * Calculate the current damage of the bullet based on everything it has penetrated so far
+     */
+    public float getDamageAffectedByPenetration() {
+		if(type.penetratingPower <= 0 || 
+		(type.playerPenetrationEffectOnDamage == 0 && type.entityPenetrationEffectOnDamage == 0 
+		&& type.blockPenetrationEffectOnDamage == 0 && type.penetrationDecayEffectOnDamage == 0) ) return damage;
+		
+		float totalPenetrationLostPercentage = 0F;
+		
+		for(PenetrationLoss penetrationLoss : penetrationLosses) {
+			float effectOnDamage = penetrationLoss.getType().getEffectOnDamage(type);
+			float loss = penetrationLoss.getLoss();
+			
+			if(effectOnDamage <= 0 || effectOnDamage > 1 || this.penetratingPower <= 0 && loss == 0) continue;
+
+			float penetrationLostPercentage = (loss/type.penetratingPower);
+			if(penetrationLostPercentage == 0) continue;
+
+			totalPenetrationLostPercentage += (penetrationLostPercentage - penetrationLostPercentage * (1-effectOnDamage));
+		}		
+		
+		return this.damage * (1-totalPenetrationLostPercentage);
+	}
     
     private ArrayList<MovingObjectPosition> rayTraceAllBlocks(World world, Vec3 p_147447_1_, Vec3 p_147447_2_, boolean p_147447_3_, boolean p_147447_4_, boolean p_147447_5_)
     {

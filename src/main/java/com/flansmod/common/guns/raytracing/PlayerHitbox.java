@@ -206,7 +206,7 @@ public class PlayerHitbox {
             case LEFTARM:
             case RIGHTARM: {
                 //Calculate the hit damage
-                float hitDamage = bullet.damage * bullet.type.damageVsPlayer * damageModifier;
+                float hitDamage = bullet.getDamageAffectedByPenetration() * bullet.type.damageVsPlayer * damageModifier;
                 //Create a damage source object
                 DamageSource damagesource = bullet.owner == null ? DamageSource.generic : bullet.getBulletDamage(type == EnumHitboxType.HEAD);
                 //When the damage is 0 (such as with Nerf guns) the entityHurt Forge hook is not called, so this hacky thing is here
