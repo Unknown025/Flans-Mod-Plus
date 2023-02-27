@@ -1571,7 +1571,7 @@ public class EntityBullet extends EntityShootable implements IEntityAdditionalSp
 			float effectOnDamage = penetrationLoss.getType().getEffectOnDamage(type);
 			float loss = penetrationLoss.getLoss();
 			
-			if(effectOnDamage <= 0 || effectOnDamage > 1 || this.penetratingPower <= 0 && loss == 0) continue;
+			if(effectOnDamage <= 0 || effectOnDamage > 1 || this.penetratingPower <= 0 || loss == 0) continue;
 
 			float penetrationLostPercentage = (loss/type.penetratingPower);
 			if(penetrationLostPercentage == 0) continue;
