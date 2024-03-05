@@ -37,7 +37,7 @@ public class PlayerStats {
     public PlayerStats(World world, EntityPlayerMP player) {
         playerMP = player;
         this.world = world;
-        nickname = player.getDisplayName();
+        nickname = player.getCommandSenderName();
         savePlayerStats();
     }
 
