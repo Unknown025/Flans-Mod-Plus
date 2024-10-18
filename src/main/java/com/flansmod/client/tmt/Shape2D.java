@@ -112,37 +112,30 @@ public class Shape2D
 	
 	protected void setVectorRotations(Vec3 vector, float xRot, float yRot, float zRot)
 	{
-		float x = xRot;
-		float y = yRot;
-		float z = zRot;
-        float xC = MathHelper.cos(x);
-        float xS = MathHelper.sin(x);
-        float yC = MathHelper.cos(y);
-        float yS = MathHelper.sin(y);
-        float zC = MathHelper.cos(z);
-        float zS = MathHelper.sin(z);
+	float xC = MathHelper.cos(xRot);
+	float xS = MathHelper.sin(xRot);
+	float yC = MathHelper.cos(yRot);
+	float yS = MathHelper.sin(yRot);
+	float zC = MathHelper.cos(zRot);
+	float zS = MathHelper.sin(zRot);
         
         double xVec = vector.xCoord;
         double yVec = vector.yCoord;
         double zVec = vector.zCoord;
         
         // rotation around x
-		double xy = xC*yVec - xS*zVec;
-		double xz = xC*zVec + xS*yVec;
-		// rotation around y
-		double yz = yC*xz - yS*xVec;
-		double yx = yC*xVec + yS*xz;
-		// rotation around z
-		double zx = zC*yx - zS*xy;
-		double zy = zC*xy + zS*yx;
-		
-		xVec = zx;
-		yVec = zy;
-		zVec = yz;
-		
-        vector.xCoord = xVec;
-        vector.yCoord = yVec;
-        vector.zCoord = zVec;
+	double xy = xC*yVec - xS*zVec;
+	double xz = xC*zVec + xS*yVec;
+	// rotation around y
+	double yz = yC*xz - yS*xVec;
+	double yx = yC*xVec + yS*xz;
+	// rotation around z
+	double zx = zC*yx - zS*xy;
+	double zy = zC*xy + zS*yx;
+			
+        vector.xCoord = zx;
+        vector.yCoord = zy;
+        vector.zCoord = yz;
 	}
 	
 	public ArrayList<Coord2D> coords;
