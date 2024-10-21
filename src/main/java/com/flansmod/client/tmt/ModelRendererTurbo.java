@@ -1049,277 +1049,6 @@ public class ModelRendererTurbo extends ModelRenderer {
     }
 
     /**
-     * Adds a cube the size of one pixel. It will take a pixel from the texture and
-     * uses that as the texture of said cube. The accurate name would actually be
-     * "addVoxel". This method has been added to make it more compatible with Techne,
-     * and allows for easy single-colored boxes.
-     *
-     * @param x      the starting x-position
-     * @param y      the starting y-position
-     * @param z      the starting z-position
-     * @param width  the width of the box
-     * @param height the height of the box
-     * @param length the length of the box
-     */
-    public void addPixel(float x, float y, float z, float width, float height, float length) {
-        addPixel(x, y, z, new float[]{width, height, length}, textureOffsetX, textureOffsetY);
-    }
-
-    /**
-     * Adds a cube the size of one pixel. It will take a pixel from the texture and
-     * uses that as the texture of said cube. The accurate name would actually be
-     * "addVoxel". It will not overwrite the model data, but rather, it will add to
-     * the model.
-     *
-     * @param x     the starting x-position
-     * @param y     the starting y-position
-     * @param z     the starting z-position
-     * @param scale the "scale" of the cube, where scale is a float integer consisting of three values
-     * @param w     the x-coordinate on the texture
-     * @param h     the y-coordinate on the texture
-     */
-    public void addPixel(float x, float y, float z, float[] scale, int w, int h) {
-        PositionTextureVertex[] verts = new PositionTextureVertex[8];
-        TexturedPolygon[] poly = new TexturedPolygon[6];
-
-        float x1 = x + scale[0];
-        float y1 = y + scale[1];
-        float z1 = z + scale[2];
-
-        float[] f = {x, y, z};
-        float[] f1 = {x1, y, z};
-        float[] f2 = {x1, y1, z};
-        float[] f3 = {x, y1, z};
-        float[] f4 = {x, y, z1};
-        float[] f5 = {x1, y, z1};
-        float[] f6 = {x1, y1, z1};
-        float[] f7 = {x, y1, z1};
-        PositionTextureVertex positionTexturevertex = new PositionTextureVertex(f[0], f[1], f[2], 0.0F, 0.0F);
-        PositionTextureVertex positionTexturevertex1 = new PositionTextureVertex(f1[0], f1[1], f1[2], 0.0F, 8F);
-        PositionTextureVertex positionTexturevertex2 = new PositionTextureVertex(f2[0], f2[1], f2[2], 8F, 8F);
-        PositionTextureVertex positionTexturevertex3 = new PositionTextureVertex(f3[0], f3[1], f3[2], 8F, 0.0F);
-        PositionTextureVertex positionTexturevertex4 = new PositionTextureVertex(f4[0], f4[1], f4[2], 0.0F, 0.0F);
-        PositionTextureVertex positionTexturevertex5 = new PositionTextureVertex(f5[0], f5[1], f5[2], 0.0F, 8F);
-        PositionTextureVertex positionTexturevertex6 = new PositionTextureVertex(f6[0], f6[1], f6[2], 8F, 8F);
-        PositionTextureVertex positionTexturevertex7 = new PositionTextureVertex(f7[0], f7[1], f7[2], 8F, 0.0F);
-
-        verts[0] = positionTexturevertex;
-        verts[1] = positionTexturevertex1;
-        verts[2] = positionTexturevertex2;
-        verts[3] = positionTexturevertex3;
-        verts[4] = positionTexturevertex4;
-        verts[5] = positionTexturevertex5;
-        verts[6] = positionTexturevertex6;
-        verts[7] = positionTexturevertex7;
-
-        poly[0] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex5, positionTexturevertex1, positionTexturevertex2, positionTexturevertex6}, w, h, w + 1, h + 1);
-        poly[1] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex, positionTexturevertex4, positionTexturevertex7, positionTexturevertex3}, w, h, w + 1, h + 1);
-        poly[2] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex5, positionTexturevertex4, positionTexturevertex, positionTexturevertex1}, w, h, w + 1, h + 1);
-        poly[3] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex2, positionTexturevertex3, positionTexturevertex7, positionTexturevertex6}, w, h, w + 1, h + 1);
-        poly[4] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex1, positionTexturevertex, positionTexturevertex3, positionTexturevertex2}, w, h, w + 1, h + 1);
-        poly[5] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex4, positionTexturevertex5, positionTexturevertex6, positionTexturevertex7}, w, h, w + 1, h + 1);
-
-        copyTo(verts, poly);
-    }
-
-    /**
-     * Creates a model shaped like the exact image on the texture. Note that this method will
-     * increase the amount of quads on your model, which could effectively slow down your
-     * PC, so unless it is really a necessity to use it, I'd suggest you avoid using this
-     * method to create your model.
-     *
-     * @param x         the starting x-position
-     * @param y         the starting y-position
-     * @param z         the starting z-position
-     * @param w         the width of the sprite
-     * @param h         the height of the sprite
-     * @param expansion the expansion of the sprite. It only increases the size in each direction by that many.
-     */
-    public void addSprite(float x, float y, float z, int w, int h, float expansion) {
-        addSprite(x, y, z, w, h, 1, false, false, false, false, false, expansion);
-    }
-
-    /**
-     * Creates a model shaped like the exact image on the texture. Note that this method will
-     * increase the amount of quads on your model, which could effectively slow down your
-     * PC, so unless it is really a necessity to use it, I'd suggest you avoid using this
-     * method to create your model.
-     *
-     * @param x         the starting x-position
-     * @param y         the starting y-position
-     * @param z         the starting z-position
-     * @param w         the width of the sprite
-     * @param h         the height of the sprite
-     * @param rotX      a boolean to define if it rotates 90 degrees around its yaw-axis
-     * @param rotY      a boolean to define if it rotates 90 degrees around its pitch-axis
-     * @param rotZ      a boolean to define if it rotates 90 degrees around its roll-axis
-     * @param mirrorX   a boolean to define if the sprite should be mirrored
-     * @param mirrorY   a boolean to define if the sprite should be flipped
-     * @param expansion the expansion of the sprite. It only increases the size in each direction by that many.
-     */
-    public void addSprite(float x, float y, float z, int w, int h, boolean rotX, boolean rotY, boolean rotZ, boolean mirrorX, boolean mirrorY, float expansion) {
-        addSprite(x, y, z, w, h, 1, rotX, rotY, rotZ, mirrorX, mirrorY, expansion);
-    }
-
-    /**
-     * Creates a model shaped like the exact image on the texture. Note that this method will
-     * increase the amount of quads on your model, which could effectively slow down your
-     * PC, so unless it is really a necessity to use it, I'd suggest you avoid using this
-     * method to create your model.
-     *
-     * @param x         the starting x-position
-     * @param y         the starting y-position
-     * @param z         the starting z-position
-     * @param w         the width of the sprite
-     * @param h         the height of the sprite
-     * @param d         the depth of the shape itself
-     * @param rotX      a boolean to define if it rotates 90 degrees around its yaw-axis
-     * @param rotY      a boolean to define if it rotates 90 degrees around its pitch-axis
-     * @param rotZ      a boolean to define if it rotates 90 degrees around its roll-axis
-     * @param mirrorX   a boolean to define if the sprite should be mirrored
-     * @param mirrorY   a boolean to define if the sprite should be flipped
-     * @param expansion the expansion of the sprite. It only increases the size in each direction by that many.
-     */
-    public void addSprite(float x, float y, float z, int w, int h, int d, boolean rotX, boolean rotY, boolean rotZ, boolean mirrorX, boolean mirrorY, float expansion) {
-        addSprite(x, y, z, w, h, d, 1.0F, rotX, rotY, rotZ, mirrorX, mirrorY, expansion);
-    }
-
-    /**
-     * Creates a model shaped like the exact image on the texture. Note that this method will
-     * increase the amount of quads on your model, which could effectively slow down your
-     * PC, so unless it is really a necessity to use it, I'd suggest you avoid using this
-     * method to create your model.
-     *
-     * @param x          the starting x-position
-     * @param y          the starting y-position
-     * @param z          the starting z-position
-     * @param w          the width of the sprite
-     * @param h          the height of the sprite
-     * @param d          the depth of the shape itself
-     * @param pixelScale the scale of each individual pixel
-     * @param rotX       a boolean to define if it rotates 90 degrees around its yaw-axis
-     * @param rotY       a boolean to define if it rotates 90 degrees around its pitch-axis
-     * @param rotZ       a boolean to define if it rotates 90 degrees around its roll-axis
-     * @param mirrorX    a boolean to define if the sprite should be mirrored
-     * @param mirrorY    a boolean to define if the sprite should be flipped
-     * @param expansion  the expansion of the sprite. It only increases the size in each direction by that many.
-     */
-    public void addSprite(float x, float y, float z, int w, int h, int d, float pixelScale, boolean rotX, boolean rotY, boolean rotZ, boolean mirrorX, boolean mirrorY, float expansion) {
-        String[] mask = new String[h];
-        char[] str = new char[w];
-        Arrays.fill(str, '1');
-        Arrays.fill(mask, new String(str));
-
-        addSprite(x, y, z, mask, d, pixelScale, rotX, rotY, rotZ, mirrorX, mirrorY, expansion);
-    }
-
-    /**
-     * Creates a model shaped like the exact image on the texture. Note that this method will
-     * increase the amount of quads on your model, which could effectively slow down your
-     * PC, so unless it is really a necessity to use it, I'd suggest you avoid using this
-     * method to create your model.
-     * <br /><br />
-     * This method uses a mask string. This way you can reduce the amount of quads used. To
-     * use this, create a String array, where you use a 1 to signify that the pixel will be
-     * drawn. Any other character will cause that pixel to not be drawn.
-     *
-     * @param x          the starting x-position
-     * @param y          the starting y-position
-     * @param z          the starting z-position
-     * @param mask       an array with the mask string
-     * @param d          the depth of the shape itself
-     * @param pixelScale the scale of each individual pixel
-     * @param rotX       a boolean to define if it rotates 90 degrees around its yaw-axis
-     * @param rotY       a boolean to define if it rotates 90 degrees around its pitch-axis
-     * @param rotZ       a boolean to define if it rotates 90 degrees around its roll-axis
-     * @param mirrorX    a boolean to define if the sprite should be mirrored
-     * @param mirrorY    a boolean to define if the sprite should be flipped
-     * @param expansion  the expansion of the sprite. It only increases the size in each direction by that many.
-     */
-    public void addSprite(float x, float y, float z, String[] mask, int d, float pixelScale, boolean rotX, boolean rotY, boolean rotZ, boolean mirrorX, boolean mirrorY, float expansion) {
-        int w = mask[0].length();
-        int h = mask.length;
-
-        float x1 = x - expansion;
-        float y1 = y - expansion;
-        float z1 = z - expansion;
-
-        int wDir = 0;
-        int hDir = 0;
-        int dDir = 0;
-
-        float wScale = 1F + (expansion / (w * pixelScale));
-        float hScale = 1F + (expansion / (h * pixelScale));
-
-        if (!rotX) {
-            if (!rotY) {
-                if (!rotZ) {
-                    wDir = 0;
-                    hDir = 1;
-                    dDir = 2;
-                } else {
-                    wDir = 1;
-                    hDir = 0;
-                    dDir = 2;
-                }
-            } else {
-                if (!rotZ) {
-                    wDir = 2;
-                    hDir = 1;
-                    dDir = 0;
-                } else {
-                    wDir = 2;
-                    hDir = 0;
-                    dDir = 1;
-                }
-            }
-        } else {
-            if (!rotY) {
-                if (!rotZ) {
-                    wDir = 0;
-                    hDir = 2;
-                    dDir = 1;
-                } else {
-                    wDir = 1;
-                    hDir = 2;
-                    dDir = 0;
-                }
-            } else {
-                if (!rotZ) {
-                    wDir = 2;
-                    hDir = 0;
-                    dDir = 1;
-                } else {
-                    wDir = 2;
-                    hDir = 1;
-                    dDir = 0;
-                }
-            }
-        }
-
-        int texStartX = textureOffsetX + (mirrorX ? w - 1 : 0);
-        int texStartY = textureOffsetY + (mirrorY ? h - 1 : 0);
-        int texDirX = (mirrorX ? -1 : 1);
-        int texDirY = (mirrorY ? -1 : 1);
-
-        float wVoxSize = getPixelSize(wScale, hScale, d * pixelScale + expansion * 2, 0, 1, wDir, 1, 1);
-        float hVoxSize = getPixelSize(wScale, hScale, d * pixelScale + expansion * 2, 0, 1, hDir, 1, 1);
-        float dVoxSize = getPixelSize(wScale, hScale, d * pixelScale + expansion * 2, 0, 1, dDir, 1, 1);
-
-        for (int i = 0; i < w; i++) {
-            for (int j = 0; j < h; j++) {
-                if (mask[j].charAt(i) == '1') {
-                    addPixel(x1 + getPixelSize(wScale, hScale, 0, wDir, hDir, 0, i, j), y1 + getPixelSize(wScale, hScale, 0, wDir, hDir, 1, i, j), z1 + getPixelSize(wScale, hScale, 0, wDir, hDir, 2, i, j), new float[]{wVoxSize, hVoxSize, dVoxSize}, texStartX + texDirX * i, texStartY + texDirY * j);
-                }
-            }
-        }
-    }
-
-    private float getPixelSize(float wScale, float hScale, float dScale, int wDir, int hDir, int checkDir, int texPosX, int texPosY) {
-        return (wDir == checkDir ? wScale * texPosX : (hDir == checkDir ? hScale * texPosY : dScale));
-    }
-
-    /**
      * Adds a spherical shape.
      *
      * @param x
@@ -2118,5 +1847,279 @@ public class ModelRendererTurbo extends ModelRenderer {
         }
 
         GL11.glEndList();
+    }
+
+/*------------------------------------------------------------------------------------------------*/
+/*----------------------------------------RARELY-USED-CODE----------------------------------------*/
+/*------------------------------------------------------------------------------------------------*/
+    /**
+     * Adds a cube the size of one pixel. It will take a pixel from the texture and
+     * uses that as the texture of said cube. The accurate name would actually be
+     * "addVoxel". This method has been added to make it more compatible with Techne,
+     * and allows for easy single-colored boxes.
+     *
+     * @param x      the starting x-position
+     * @param y      the starting y-position
+     * @param z      the starting z-position
+     * @param width  the width of the box
+     * @param height the height of the box
+     * @param length the length of the box
+     */
+    public void addPixel(float x, float y, float z, float width, float height, float length) {
+        addPixel(x, y, z, new float[]{width, height, length}, textureOffsetX, textureOffsetY);
+    }
+
+    /**
+     * Adds a cube the size of one pixel. It will take a pixel from the texture and
+     * uses that as the texture of said cube. The accurate name would actually be
+     * "addVoxel". It will not overwrite the model data, but rather, it will add to
+     * the model.
+     *
+     * @param x     the starting x-position
+     * @param y     the starting y-position
+     * @param z     the starting z-position
+     * @param scale the "scale" of the cube, where scale is a float integer consisting of three values
+     * @param w     the x-coordinate on the texture
+     * @param h     the y-coordinate on the texture
+     */
+    public void addPixel(float x, float y, float z, float[] scale, int w, int h) {
+        PositionTextureVertex[] verts = new PositionTextureVertex[8];
+        TexturedPolygon[] poly = new TexturedPolygon[6];
+
+        float x1 = x + scale[0];
+        float y1 = y + scale[1];
+        float z1 = z + scale[2];
+
+        float[] f = {x, y, z};
+        float[] f1 = {x1, y, z};
+        float[] f2 = {x1, y1, z};
+        float[] f3 = {x, y1, z};
+        float[] f4 = {x, y, z1};
+        float[] f5 = {x1, y, z1};
+        float[] f6 = {x1, y1, z1};
+        float[] f7 = {x, y1, z1};
+        PositionTextureVertex positionTexturevertex = new PositionTextureVertex(f[0], f[1], f[2], 0.0F, 0.0F);
+        PositionTextureVertex positionTexturevertex1 = new PositionTextureVertex(f1[0], f1[1], f1[2], 0.0F, 8F);
+        PositionTextureVertex positionTexturevertex2 = new PositionTextureVertex(f2[0], f2[1], f2[2], 8F, 8F);
+        PositionTextureVertex positionTexturevertex3 = new PositionTextureVertex(f3[0], f3[1], f3[2], 8F, 0.0F);
+        PositionTextureVertex positionTexturevertex4 = new PositionTextureVertex(f4[0], f4[1], f4[2], 0.0F, 0.0F);
+        PositionTextureVertex positionTexturevertex5 = new PositionTextureVertex(f5[0], f5[1], f5[2], 0.0F, 8F);
+        PositionTextureVertex positionTexturevertex6 = new PositionTextureVertex(f6[0], f6[1], f6[2], 8F, 8F);
+        PositionTextureVertex positionTexturevertex7 = new PositionTextureVertex(f7[0], f7[1], f7[2], 8F, 0.0F);
+
+        verts[0] = positionTexturevertex;
+        verts[1] = positionTexturevertex1;
+        verts[2] = positionTexturevertex2;
+        verts[3] = positionTexturevertex3;
+        verts[4] = positionTexturevertex4;
+        verts[5] = positionTexturevertex5;
+        verts[6] = positionTexturevertex6;
+        verts[7] = positionTexturevertex7;
+
+        poly[0] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex5, positionTexturevertex1, positionTexturevertex2, positionTexturevertex6}, w, h, w + 1, h + 1);
+        poly[1] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex, positionTexturevertex4, positionTexturevertex7, positionTexturevertex3}, w, h, w + 1, h + 1);
+        poly[2] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex5, positionTexturevertex4, positionTexturevertex, positionTexturevertex1}, w, h, w + 1, h + 1);
+        poly[3] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex2, positionTexturevertex3, positionTexturevertex7, positionTexturevertex6}, w, h, w + 1, h + 1);
+        poly[4] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex1, positionTexturevertex, positionTexturevertex3, positionTexturevertex2}, w, h, w + 1, h + 1);
+        poly[5] = addPolygonReturn(new PositionTextureVertex[]{positionTexturevertex4, positionTexturevertex5, positionTexturevertex6, positionTexturevertex7}, w, h, w + 1, h + 1);
+
+        copyTo(verts, poly);
+    }
+
+    /**
+     * Creates a model shaped like the exact image on the texture. Note that this method will
+     * increase the amount of quads on your model, which could effectively slow down your
+     * PC, so unless it is really a necessity to use it, I'd suggest you avoid using this
+     * method to create your model.
+     *
+     * @param x         the starting x-position
+     * @param y         the starting y-position
+     * @param z         the starting z-position
+     * @param w         the width of the sprite
+     * @param h         the height of the sprite
+     * @param expansion the expansion of the sprite. It only increases the size in each direction by that many.
+     */
+    public void addSprite(float x, float y, float z, int w, int h, float expansion) {
+        addSprite(x, y, z, w, h, 1, false, false, false, false, false, expansion);
+    }
+
+    /**
+     * Creates a model shaped like the exact image on the texture. Note that this method will
+     * increase the amount of quads on your model, which could effectively slow down your
+     * PC, so unless it is really a necessity to use it, I'd suggest you avoid using this
+     * method to create your model.
+     *
+     * @param x         the starting x-position
+     * @param y         the starting y-position
+     * @param z         the starting z-position
+     * @param w         the width of the sprite
+     * @param h         the height of the sprite
+     * @param rotX      a boolean to define if it rotates 90 degrees around its yaw-axis
+     * @param rotY      a boolean to define if it rotates 90 degrees around its pitch-axis
+     * @param rotZ      a boolean to define if it rotates 90 degrees around its roll-axis
+     * @param mirrorX   a boolean to define if the sprite should be mirrored
+     * @param mirrorY   a boolean to define if the sprite should be flipped
+     * @param expansion the expansion of the sprite. It only increases the size in each direction by that many.
+     */
+    public void addSprite(float x, float y, float z, int w, int h, boolean rotX, boolean rotY, boolean rotZ, boolean mirrorX, boolean mirrorY, float expansion) {
+        addSprite(x, y, z, w, h, 1, rotX, rotY, rotZ, mirrorX, mirrorY, expansion);
+    }
+
+    /**
+     * Creates a model shaped like the exact image on the texture. Note that this method will
+     * increase the amount of quads on your model, which could effectively slow down your
+     * PC, so unless it is really a necessity to use it, I'd suggest you avoid using this
+     * method to create your model.
+     *
+     * @param x         the starting x-position
+     * @param y         the starting y-position
+     * @param z         the starting z-position
+     * @param w         the width of the sprite
+     * @param h         the height of the sprite
+     * @param d         the depth of the shape itself
+     * @param rotX      a boolean to define if it rotates 90 degrees around its yaw-axis
+     * @param rotY      a boolean to define if it rotates 90 degrees around its pitch-axis
+     * @param rotZ      a boolean to define if it rotates 90 degrees around its roll-axis
+     * @param mirrorX   a boolean to define if the sprite should be mirrored
+     * @param mirrorY   a boolean to define if the sprite should be flipped
+     * @param expansion the expansion of the sprite. It only increases the size in each direction by that many.
+     */
+    public void addSprite(float x, float y, float z, int w, int h, int d, boolean rotX, boolean rotY, boolean rotZ, boolean mirrorX, boolean mirrorY, float expansion) {
+        addSprite(x, y, z, w, h, d, 1.0F, rotX, rotY, rotZ, mirrorX, mirrorY, expansion);
+    }
+
+    /**
+     * Creates a model shaped like the exact image on the texture. Note that this method will
+     * increase the amount of quads on your model, which could effectively slow down your
+     * PC, so unless it is really a necessity to use it, I'd suggest you avoid using this
+     * method to create your model.
+     *
+     * @param x          the starting x-position
+     * @param y          the starting y-position
+     * @param z          the starting z-position
+     * @param w          the width of the sprite
+     * @param h          the height of the sprite
+     * @param d          the depth of the shape itself
+     * @param pixelScale the scale of each individual pixel
+     * @param rotX       a boolean to define if it rotates 90 degrees around its yaw-axis
+     * @param rotY       a boolean to define if it rotates 90 degrees around its pitch-axis
+     * @param rotZ       a boolean to define if it rotates 90 degrees around its roll-axis
+     * @param mirrorX    a boolean to define if the sprite should be mirrored
+     * @param mirrorY    a boolean to define if the sprite should be flipped
+     * @param expansion  the expansion of the sprite. It only increases the size in each direction by that many.
+     */
+    public void addSprite(float x, float y, float z, int w, int h, int d, float pixelScale, boolean rotX, boolean rotY, boolean rotZ, boolean mirrorX, boolean mirrorY, float expansion) {
+        String[] mask = new String[h];
+        char[] str = new char[w];
+        Arrays.fill(str, '1');
+        Arrays.fill(mask, new String(str));
+
+        addSprite(x, y, z, mask, d, pixelScale, rotX, rotY, rotZ, mirrorX, mirrorY, expansion);
+    }
+
+    /**
+     * Creates a model shaped like the exact image on the texture. Note that this method will
+     * increase the amount of quads on your model, which could effectively slow down your
+     * PC, so unless it is really a necessity to use it, I'd suggest you avoid using this
+     * method to create your model.
+     * <br /><br />
+     * This method uses a mask string. This way you can reduce the amount of quads used. To
+     * use this, create a String array, where you use a 1 to signify that the pixel will be
+     * drawn. Any other character will cause that pixel to not be drawn.
+     *
+     * @param x          the starting x-position
+     * @param y          the starting y-position
+     * @param z          the starting z-position
+     * @param mask       an array with the mask string
+     * @param d          the depth of the shape itself
+     * @param pixelScale the scale of each individual pixel
+     * @param rotX       a boolean to define if it rotates 90 degrees around its yaw-axis
+     * @param rotY       a boolean to define if it rotates 90 degrees around its pitch-axis
+     * @param rotZ       a boolean to define if it rotates 90 degrees around its roll-axis
+     * @param mirrorX    a boolean to define if the sprite should be mirrored
+     * @param mirrorY    a boolean to define if the sprite should be flipped
+     * @param expansion  the expansion of the sprite. It only increases the size in each direction by that many.
+     */
+    public void addSprite(float x, float y, float z, String[] mask, int d, float pixelScale, boolean rotX, boolean rotY, boolean rotZ, boolean mirrorX, boolean mirrorY, float expansion) {
+        int w = mask[0].length();
+        int h = mask.length;
+
+        float x1 = x - expansion;
+        float y1 = y - expansion;
+        float z1 = z - expansion;
+
+        int wDir = 0;
+        int hDir = 0;
+        int dDir = 0;
+
+        float wScale = 1F + (expansion / (w * pixelScale));
+        float hScale = 1F + (expansion / (h * pixelScale));
+
+        if (!rotX) {
+            if (!rotY) {
+                if (!rotZ) {
+                    wDir = 0;
+                    hDir = 1;
+                    dDir = 2;
+                } else {
+                    wDir = 1;
+                    hDir = 0;
+                    dDir = 2;
+                }
+            } else {
+                if (!rotZ) {
+                    wDir = 2;
+                    hDir = 1;
+                    dDir = 0;
+                } else {
+                    wDir = 2;
+                    hDir = 0;
+                    dDir = 1;
+                }
+            }
+        } else {
+            if (!rotY) {
+                if (!rotZ) {
+                    wDir = 0;
+                    hDir = 2;
+                    dDir = 1;
+                } else {
+                    wDir = 1;
+                    hDir = 2;
+                    dDir = 0;
+                }
+            } else {
+                if (!rotZ) {
+                    wDir = 2;
+                    hDir = 0;
+                    dDir = 1;
+                } else {
+                    wDir = 2;
+                    hDir = 1;
+                    dDir = 0;
+                }
+            }
+        }
+
+        int texStartX = textureOffsetX + (mirrorX ? w - 1 : 0);
+        int texStartY = textureOffsetY + (mirrorY ? h - 1 : 0);
+        int texDirX = (mirrorX ? -1 : 1);
+        int texDirY = (mirrorY ? -1 : 1);
+
+        float wVoxSize = getPixelSize(wScale, hScale, d * pixelScale + expansion * 2, 0, 1, wDir, 1, 1);
+        float hVoxSize = getPixelSize(wScale, hScale, d * pixelScale + expansion * 2, 0, 1, hDir, 1, 1);
+        float dVoxSize = getPixelSize(wScale, hScale, d * pixelScale + expansion * 2, 0, 1, dDir, 1, 1);
+
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                if (mask[j].charAt(i) == '1') {
+                    addPixel(x1 + getPixelSize(wScale, hScale, 0, wDir, hDir, 0, i, j), y1 + getPixelSize(wScale, hScale, 0, wDir, hDir, 1, i, j), z1 + getPixelSize(wScale, hScale, 0, wDir, hDir, 2, i, j), new float[]{wVoxSize, hVoxSize, dVoxSize}, texStartX + texDirX * i, texStartY + texDirY * j);
+                }
+            }
+        }
+    }
+
+    private float getPixelSize(float wScale, float hScale, float dScale, int wDir, int hDir, int checkDir, int texPosX, int texPosY) {
+        return (wDir == checkDir ? wScale * texPosX : (hDir == checkDir ? hScale * texPosY : dScale));
     }
 }
