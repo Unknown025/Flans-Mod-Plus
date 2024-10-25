@@ -237,6 +237,8 @@ public class GunAnimations {
         isGunEmpty = atLastBullet;
     }
 
+    public void doshootminigun(float updatespeed){minigunBarrelRotationSpeed+=-2F + updatespeed;}
+
     public void doShoot(int pumpDelay, int pumpTime, int hammerDelay, float hammerAngle, float althammerAngle, int casingDelay) {
         Random r = new Random();
 
