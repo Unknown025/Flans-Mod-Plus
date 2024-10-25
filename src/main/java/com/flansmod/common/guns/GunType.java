@@ -163,6 +163,10 @@ public class GunType extends PaintableType implements IScope {
      */
     public float minigunStartSpeed = 15F;
     /**
+     * how fast does the barrel spin 
+     */
+    public float minigunAnimateSpeed = 2F;
+    /**
      * Whether this gun can be used underwater
      */
     public boolean canShootUnderwater = true;
@@ -572,6 +576,7 @@ public class GunType extends PaintableType implements IScope {
             dropItemOnShoot = ConfigUtils.configString(config, "DropItemOnShoot", null);
             numBurstRounds = ConfigUtils.configInt(config, "NumBurstRounds", numBurstRounds);
             minigunStartSpeed = ConfigUtils.configFloat(config, "MinigunStartSpeed", minigunStartSpeed);
+	    minigunAnimateSpeed = ConfigUtils.configFloat(config, "MinigunAnimateSpeed", minigunAnimateSpeed);
 
             String line = ConfigUtils.configString(config, "ItemUseAction", null);
             try {
