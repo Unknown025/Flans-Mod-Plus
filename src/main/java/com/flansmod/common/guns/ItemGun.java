@@ -664,6 +664,7 @@ public class ItemGun extends Item implements IPaintableItem, IGunboxDescriptiona
                 
 //				animations.onGunEmpty(onLastBullet);
                 animations.doShoot(pumpDelay, pumpTime, hammerDelay, hammerAngle, althammerAngle, casingDelay);
+		animations.doshootminigun(gunType.minigunAnimateSpeed);
                 if (type.useFancyRecoil) {
                     FlansModClient.playerRecoil.addRecoil(type.getRecoil(stack));
                 }
