@@ -167,6 +167,12 @@ public class GunType extends PaintableType implements IScope {
      */
     public float minigunAnimateSpeed = 2F;
     /**
+     * spin direction of spin part gun type
+     */
+    public float spinX = 1F;
+    public float spinY = 0F;
+    public float spinZ = 0F;
+    /**
      * Whether this gun can be used underwater
      */
     public boolean canShootUnderwater = true;
@@ -577,7 +583,10 @@ public class GunType extends PaintableType implements IScope {
             numBurstRounds = ConfigUtils.configInt(config, "NumBurstRounds", numBurstRounds);
             minigunStartSpeed = ConfigUtils.configFloat(config, "MinigunStartSpeed", minigunStartSpeed);
 	    minigunAnimateSpeed = ConfigUtils.configFloat(config, "MinigunAnimateSpeed", minigunAnimateSpeed);
-
+	    spinX = ConfigUtils.configFloat(config, "SpinX", spinX);
+	    spinY = ConfigUtils.configFloat(config, "SpinY", spinY);
+	    spinZ = ConfigUtils.configFloat(config, "SpinZ", spinZ);
+		
             String line = ConfigUtils.configString(config, "ItemUseAction", null);
             try {
                 if (line != null) {
