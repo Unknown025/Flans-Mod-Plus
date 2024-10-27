@@ -233,10 +233,11 @@ public class GunAnimations {
     }
 
     //Not to be used for mechas
-    public void onGunEmpty(boolean atLastBullet) {
-        isGunEmpty = atLastBullet;
-    }
-
+    public void onGunEmpty(boolean atLastBullet) {isGunEmpty = atLastBullet;}
+    
+    //handle minigun animation speed with fail-safe (doesn't change default value in doshoot function)
+    public void barrelRotationSpeed(float f){minigunBarrelRotationSpeed+=-2F + f;}
+    
     public void doShoot(int pumpDelay, int pumpTime, int hammerDelay, float hammerAngle, float althammerAngle, int casingDelay) {
         Random r = new Random();
 
