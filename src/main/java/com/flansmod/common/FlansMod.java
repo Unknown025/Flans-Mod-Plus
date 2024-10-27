@@ -152,7 +152,7 @@ public class FlansMod {
     public static final TeamsManager teamsManager = new TeamsManager();
     public static final CommonTickHandler tickHandler = new CommonTickHandler();
     public static FlansHooks hooks = new FlansHooks();
-    public static final ContentManager contentManager = new ContentManager();
+    public static final ContentManager CONTENT_MANAGER = new ContentManager();
 
     private static final HashMap<String, String> modelLocations = new HashMap<>();
 
@@ -235,9 +235,9 @@ public class FlansMod {
         proxy.registerRenderers();
 
         //Read content packs
-        contentManager.loadContent();
+        CONTENT_MANAGER.loadContent();
         proxy.loadFlanAssets();
-        contentManager.createItems();
+        CONTENT_MANAGER.createItems();
 
         if (!gunItems.isEmpty()) {
             MinecraftForge.EVENT_BUS.register(gunItems.get(0));
@@ -246,7 +246,7 @@ public class FlansMod {
         //Do proxy loading
         proxy.load();
         //Force Minecraft to reload all resources in order to load content pack resources.
-        if (contentManager.reloadResources()) {
+        if (CONTENT_MANAGER.reloadResources()) {
             logger.info("Content packs detected, reload resources");
             proxy.forceReload();
         }

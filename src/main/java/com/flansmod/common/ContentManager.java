@@ -14,7 +14,10 @@ import com.flansmod.common.guns.boxes.GunBoxType;
 import com.flansmod.common.parts.ItemPart;
 import com.flansmod.common.parts.PartType;
 import com.flansmod.common.sync.Sync;
-import com.flansmod.common.teams.*;
+import com.flansmod.common.teams.ArmourBoxType;
+import com.flansmod.common.teams.ArmourType;
+import com.flansmod.common.teams.BlockArmourBox;
+import com.flansmod.common.teams.ItemTeamArmour;
 import com.flansmod.common.tools.ItemTool;
 import com.flansmod.common.tools.ToolType;
 import com.flansmod.common.types.EnumType;
@@ -27,16 +30,15 @@ import net.minecraft.launchwrapper.Launch;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.nio.file.Files;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 public class ContentManager {
-    public static final Pattern zipJar = Pattern.compile("(.+).(zip|jar)$");
+    public static final Pattern ZIP_JAR = Pattern.compile("(.+).(zip|jar)$");
 
     /**
      * Enables various development environment features.
@@ -45,6 +47,7 @@ public class ContentManager {
     private boolean loggedDeobf;
     private boolean reloadResources;
     private final HashMap<String, IFlansContentProvider> contentPacks = new HashMap<>();
+    private final List<File> contentList = new LinkedList<>();
 
     /**
      * Finds and loads all Flans content.
@@ -65,9 +68,10 @@ public class ContentManager {
                                 loggedDeobf = true;
                             }
                             contentPacks.put(directory, new ContentPackMod(container, provider));
-                        } else if (zipJar.matcher(source.getName()).matches()) {
+                        } else if (ZIP_JAR.matcher(source.getName()).matches()) {
                             contentPacks.put(directory, new ContentPackMod(container, provider));
                         }
+                        contentList.add(source);
                     }
                 }
             }
@@ -76,12 +80,14 @@ public class ContentManager {
         //Flans folder
         for (File file : Objects.requireNonNull(FlansMod.flanDir.listFiles())) {
             //Load folders and valid zip files
-            if (file.isDirectory() || zipJar.matcher(file.getName()).matches()) {
+            if (file.isDirectory() || ZIP_JAR.matcher(file.getName()).matches()) {
                 if (contentPacks.containsKey(file.getName())) {
                     FlansMod.logger.warn("Skipping duplicated content pack {}", file.getName());
                 } else {
                     contentPacks.put(file.getName(), new ContentPackFlans(file.getName(), file));
-                    FlansMod.logger.info("Loaded content pack : " + file.getName());
+                    FlansMod.logger.info("Loaded content pack : {}", file.getName());
+
+                    contentList.add(file);
                 }
                 reloadResources = true; //Reload Minecraft resources to load Flans content.
             }
@@ -109,7 +115,7 @@ public class ContentManager {
                 if (DEV_ENV) {
                     //Load deobfuscated version.
                     loadTypesDirectory(name, new File(FlansMod.flanDir, provider.getContentDirectory()));
-                } else if (zipJar.matcher(mod.container.getSource().getName()).matches()) {
+                } else if (ZIP_JAR.matcher(mod.container.getSource().getName()).matches()) {
                     loadTypesArchive(name, mod.container.getSource());
                 }
             }
@@ -126,7 +132,7 @@ public class ContentManager {
             Class<? extends InfoType> typeClass = type.getTypeClass();
             for (TypeFile typeFile : TypeFile.files.get(type)) {
                 try {
-                    if (!(typeFile.lines.size() == 0)) {
+                    if (!(typeFile.lines.isEmpty())) {
                         InfoType infoType = (typeClass.getConstructor(TypeFile.class).newInstance(typeFile));
                         infoType.read(typeFile);
 
@@ -178,7 +184,7 @@ public class ContentManager {
                                 case team:
                                     break;
                                 default:
-                                    FlansMod.logger.error("Unrecognized type for " + infoType.shortName);
+                                    FlansMod.logger.error("Unrecognized type for {}", infoType.shortName);
                                     break;
                             }
                             Sync.addHash(typeFile.lines.toString(), infoType.shortName);
@@ -186,13 +192,13 @@ public class ContentManager {
 
                     }
                 } catch (Exception e) {
-                    FlansMod.logger.error("Failed to add " + type.name() + " : " + typeFile.name, e);
+                    FlansMod.logger.error("Failed to add {} : {}", type.name(), typeFile.name, e);
                 }
             }
-            FlansMod.logger.info("Loaded " + type.folderNames[0] + ".");
+            FlansMod.logger.info("Loaded {}.", type.folderNames[0]);
         }
         Sync.getUnifiedHash();
-        FlansMod.logger.info("Client Hash: " + Sync.getUnifiedHash());
+        FlansMod.logger.info("Client Hash: {}", Sync.getUnifiedHash());
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -235,7 +241,7 @@ public class ContentManager {
     private void loadTypesArchive(String packName, File contentPack) {
         try {
             ZipFile zip = new ZipFile(contentPack);
-            ZipInputStream zipStream = new ZipInputStream(new FileInputStream(contentPack));
+            ZipInputStream zipStream = new ZipInputStream(Files.newInputStream(contentPack.toPath()));
             BufferedReader reader = new BufferedReader(new InputStreamReader(zipStream));
             ZipEntry zipEntry;
             do {
@@ -246,7 +252,7 @@ public class ContentManager {
                     continue;
                 TypeFile typeFile = null;
                 for (EnumType type : EnumType.values()) {
-                    if (zipEntry.getName().startsWith(type.folderNames[0] + "/") && zipEntry.getName().split(type.folderNames[0] + "/").length > 1 && zipEntry.getName().split(type.folderNames[0] + "/")[1].length() > 0) {
+                    if (zipEntry.getName().startsWith(type.folderNames[0] + "/") && zipEntry.getName().split(type.folderNames[0] + "/").length > 1 && !zipEntry.getName().split(type.folderNames[0] + "/")[1].isEmpty()) {
                         String[] splitName = zipEntry.getName().split("/");
                         typeFile = new TypeFile(type, splitName[splitName.length - 1].split("\\.")[0], packName);
                     }
@@ -275,8 +281,22 @@ public class ContentManager {
         }
     }
 
+    /**
+     * Whether resources need to be reloaded.
+     *
+     * @return Reload resources.
+     */
     public boolean reloadResources() {
         return reloadResources;
+    }
+
+    /**
+     * Gets a list of all the loaded content packs.
+     *
+     * @return List of files.
+     */
+    public List<File> getContentList() {
+        return Collections.unmodifiableList(contentList);
     }
 
     /**
@@ -332,7 +352,7 @@ public class ContentManager {
                         if (src != null && destination != null)
                             FlansMod.registerModelLocation(src, destination);
                     }
-                } else if (zipJar.matcher(source.getName()).matches()) {
+                } else if (ZIP_JAR.matcher(source.getName()).matches()) {
                     ZipFile zip = new ZipFile(source);
                     ZipEntry entry = zip.getEntry("redirect.txt");
 

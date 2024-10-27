@@ -43,9 +43,7 @@ import org.lwjgl.input.Mouse;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
 
 @SuppressWarnings("WeakerAccess")
@@ -58,11 +56,6 @@ public class ClientProxy extends CommonProxy {
     public static RenderPlane planeRenderer;
     public static RenderVehicle vehicleRenderer;
     public static RenderMecha mechaRenderer;
-
-    /**
-     * The file locations of the content packs, used for loading
-     */
-    public List<File> contentPacks;
 
     @Override
     public void load() {
@@ -101,42 +94,6 @@ public class ClientProxy extends CommonProxy {
         Minecraft.getMinecraft().refreshResources();
     }
 
-    /**
-     * This method grabs all the content packs and puts them in a list. The client side part registers them as FMLModContainers which adds their resources to the game after a refresh
-     */
-    @Override
-    public List<File> getContentList(Method method, ClassLoader classloader) {
-        contentPacks = new ArrayList<>();
-        File[] files = FlansMod.flanDir.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory() || ContentManager.zipJar.matcher(file.getName()).matches()) {
-                    try {
-                        method.invoke(classloader, file.toURI().toURL());
-
-                        HashMap<String, Object> map = new HashMap<>();
-                        map.put("modid", "FlansMod");
-                        map.put("name", "Flan's Mod : " + file.getName());
-                        map.put("version", "1");
-                        FMLModContainer container = new FMLModContainer("com.flansmod.common.FlansMod", new ModCandidate(file, file, file.isDirectory() ? ContainerType.DIR : ContainerType.JAR), map);
-                        container.bindMetadata(MetadataCollection.from(null, ""));
-                        FMLClientHandler.instance().addModAsResource(container);
-
-                    } catch (Exception e) {
-                        FlansMod.log("Failed to register content pack : " + file.getName());
-                        e.printStackTrace();
-                    }
-                    // Add the directory to the content pack list
-                    FlansMod.log("Loaded content pack: " + file.getName());
-                    contentPacks.add(file);
-                }
-            }
-        }
-
-        FlansMod.log("Loaded textures and models.");
-        return contentPacks;
-    }
-
     @Override
     public void loadFlanAssets() {
         ClassLoader classloader = (net.minecraft.server.MinecraftServer.class).getClassLoader();
@@ -150,7 +107,7 @@ public class ClientProxy extends CommonProxy {
         }
 
         for (File file : Objects.requireNonNull(FlansMod.flanDir.listFiles())) {
-            if (file.isDirectory() || ContentManager.zipJar.matcher(file.getName()).matches()) {
+            if (file.isDirectory() || ContentManager.ZIP_JAR.matcher(file.getName()).matches()) {
                 try {
                     method.invoke(classloader, file.toURI().toURL());
 
@@ -163,10 +120,10 @@ public class ClientProxy extends CommonProxy {
                     FMLClientHandler.instance().addModAsResource(container);
 
                 } catch (Exception e) {
-                    FlansMod.logger.error("Failed to load images for content pack : " + file.getName(), e);
+                    FlansMod.logger.error("Failed to load images for content pack : {}", file.getName(), e);
                 }
                 // Add the directory to the content pack list
-                FlansMod.logger.info("Loaded content pack : " + file.getName());
+                FlansMod.logger.info("Loaded content pack : {}", file.getName());
             }
         }
     }
@@ -453,7 +410,7 @@ public class ClientProxy extends CommonProxy {
         try {
             doSpawnParticle(s, x, y, z, mx, my, mz, scale);
         } catch (Throwable throwable) {
-            throwable.printStackTrace();
+            FlansMod.logger.error(throwable);
         }
     }
 
@@ -467,7 +424,7 @@ public class ClientProxy extends CommonProxy {
         double d8 = mc.renderViewEntity.posZ - z;
         EntityFX entityfx = null;
 
-        // VANILLA PARTICLES, MAYBE USSUALLY CALLED PARTICLE ?
+        // VANILLA PARTICLES
         if (particleType.equals("hugeexplosion")) mc.effectRenderer.addEffect(entityfx = new EntityHugeExplodeFX(theWorld, x, y, z, vx, vy, vz));
         else if (particleType.equals("largeexplode")) mc.effectRenderer.addEffect(entityfx = new EntityLargeExplodeFX(mc.renderEngine, theWorld, x, y, z, vx, vy, vz));
         else if (particleType.equals("fireworksSpark")) mc.effectRenderer.addEffect(entityfx = new EntityFireworkSparkFX(theWorld, x, y, z, vx, vy, vz, mc.effectRenderer));
