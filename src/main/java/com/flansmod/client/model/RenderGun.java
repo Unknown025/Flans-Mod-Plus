@@ -670,7 +670,7 @@ public class RenderGun implements IItemRenderer {
 		{
 			GL11.glPushMatrix();
 			GL11.glTranslatef(model.minigunBarrelOrigin.x, model.minigunBarrelOrigin.y, model.minigunBarrelOrigin.z);
-			GL11.glRotatef(animations.minigunBarrelRotation, 1F, 0F, 0F);
+			GL11.glRotatef(animations.minigunBarrelRotation, type.spinX, type.spinY, type.spinZ);
 			GL11.glTranslatef(-model.minigunBarrelOrigin.x, -model.minigunBarrelOrigin.y, -model.minigunBarrelOrigin.z);
 			model.renderMinigunBarrel(f);
 			GL11.glPopMatrix();
