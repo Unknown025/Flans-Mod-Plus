@@ -11,13 +11,11 @@ import cpw.mods.fml.common.registry.IEntityAdditionalSpawnData;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-public class EntityWheel extends Entity implements IEntityAdditionalSpawnData
-{
+public class EntityWheel extends Entity implements IEntityAdditionalSpawnData{
 	/** The vehicle this wheel is part of */
 	public EntityDriveable vehicle;
 	/** The ID of this wheel within the vehicle */
 	public int ID;
-	
 	/** Set this to true when the client has found the parent vehicle and connected them */
 	@SideOnly(Side.CLIENT)
 	public boolean foundVehicle;
@@ -30,26 +28,22 @@ public class EntityWheel extends Entity implements IEntityAdditionalSpawnData
 	
 	public int timeLimitDriveableNull = 0;
 
-	public EntityWheel(World world) 
-	{
+	public EntityWheel(World world){
 		super(world);
 		setSize(1F, 1F);
 		stepHeight = 1.0F;
 		invulnerableUnmountCount = 0;
 	}
 
-	public EntityWheel(World world, EntityDriveable entity,  int i) 
-	{
+	public EntityWheel(World world, EntityDriveable entity,  int i){
 		this(world);
 		vehicle = entity;
 		vehicleID = entity.getEntityId();
 		ID = i;
-		
 		initPosition();
 	}
 	
-	public void initPosition()
-	{
+	public void initPosition(){
 		Vector3f wheelVector = vehicle.axes.findLocalVectorGlobally(vehicle.getDriveableType().wheelPositions[ID].position);
 		setPosition(vehicle.posX + wheelVector.x, vehicle.posY + wheelVector.y, vehicle.posZ + wheelVector.z);
 		stepHeight = vehicle.getDriveableType().wheelStepHeight;
@@ -60,79 +54,54 @@ public class EntityWheel extends Entity implements IEntityAdditionalSpawnData
 	}
 	
 	@Override
-    protected void fall(float k)
-    {
-		/*
+    protected void fall(float k){
+/*
 		if(vehicle == null || k <= 0) 
         	return;
         int i = MathHelper.ceiling_float_int(k - 3F);
         if(i > 0 && invulnerableUnmountCount==0)
         	vehicle.attackPart(vehicle.getDriveableType().wheelPositions[ID].part, DamageSource.fall, i);
-        */
+*/
     }
 
 	@Override
-	protected void entityInit() 
-	{
-	}
+	protected void entityInit(){}
 
 	@Override
-	protected void readEntityFromNBT(NBTTagCompound tags) 
-	{
-		setDead();
-	}
+	protected void readEntityFromNBT(NBTTagCompound tags){ setDead();}
 
 	@Override
-	protected void writeEntityToNBT(NBTTagCompound tags) 
-	{
-	}
+	protected void writeEntityToNBT(NBTTagCompound tags){}
 	
 	@Override
-	public void onUpdate()
-	{
+	public void onUpdate(){
 		//super.onUpdate();
-		
+
 		//prevPosX = posX;
 		//prevPosY = posY;
 		//prevPosZ = posZ;
 		
-		if(this.ridingEntity != null)
-		{
-			invulnerableUnmountCount = 20 * 4;
-		}
-		else if(invulnerableUnmountCount > 0)
-		{
-			invulnerableUnmountCount--;
-		}
-
+		if(this.ridingEntity != null) invulnerableUnmountCount = 20 * 4;
+		else if(invulnerableUnmountCount > 0) invulnerableUnmountCount--;
+		
 		//If on the client and the vehicle parent has yet to be found, search for it
-		if(worldObj.isRemote && !foundVehicle)
-		{
-			vehicle = (EntityDriveable)worldObj.getEntityByID(vehicleID);
-			if(vehicle == null)
-				return;
+		if(worldObj.isRemote && !foundVehicle) vehicle = (EntityDriveable)worldObj.getEntityByID(vehicleID);
+		
+		if(vehicle == null) return;
+		else{
 			foundVehicle = true;
 			vehicle.wheels[ID] = this;
-		}	
-		
-		if(vehicle == null)
-			return;
-		
-
-		EntityDriveable entD;
-		entD = (EntityDriveable)worldObj.getEntityByID(vehicleID);
-		if(entD == null){
-			this.timeLimitDriveableNull++;
-		}else{
-			this.timeLimitDriveableNull = 0;
 		}
 
-		if(timeLimitDriveableNull > 60*20){
-			this.setDead();
-		}
+		EntityDriveable entD = (EntityDriveable)worldObj.getEntityByID(vehicleID);
+		
+		if(entD == null) this.timeLimitDriveableNull++;
+		else this.timeLimitDriveableNull = 0;
 
-		if(!addedToChunk)
-			worldObj.spawnEntityInWorld(this);
+
+		if(timeLimitDriveableNull > 60*20) this.setDead();
+
+		if(!addedToChunk) worldObj.spawnEntityInWorld(this);
 		/*
 		//Update angles
 		rotationYaw = vehicle.rotationYaw;
@@ -185,31 +154,23 @@ public class EntityWheel extends Entity implements IEntityAdditionalSpawnData
 	
 	
 	
-	public double getSpeedXZ()
-	{
-		return Math.sqrt(motionX * motionX + motionZ * motionZ);
-	}
+	public double getSpeedXZ(){ return Math.sqrt(motionX * motionX + motionZ * motionZ);}
 	
 	@Override
-    public void setPositionAndRotation2(double d, double d1, double d2, float f, float f1, int i)
-    {
-    }
+    public void setPositionAndRotation2(double d, double d1, double d2, float f, float f1, int i){}
 	
 	@Override
-	public void writeSpawnData(ByteBuf data) 
-	{
+	public void writeSpawnData(ByteBuf data){
 		data.writeInt(vehicleID);
 		data.writeInt(ID);
 	}
 
 	@Override
-	public void readSpawnData(ByteBuf data) 
-	{
+	public void readSpawnData(ByteBuf data){
 		vehicleID = data.readInt();
 		ID = data.readInt();
 		vehicle = (EntityDriveable)worldObj.getEntityByID(vehicleID);
 		
-		if(vehicle != null)
-			setPosition(posX, posY, posZ);
+		if(vehicle != null) setPosition(posX, posY, posZ);
 	}
 }
