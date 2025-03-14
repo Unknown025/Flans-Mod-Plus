@@ -346,4 +346,14 @@ public class GunBoxType extends InfoType
 	@Override
 	@SideOnly(Side.CLIENT)
 	public ModelBase GetModel() { return null; }
+
+	public static GunBoxEntry getEntryFromType(GunType gunType){
+		for(GunBoxType gbt : gunBoxMap.values()){
+			for(GunBoxEntry gbe : gbt.gunEntries){
+				if(gbe.type.shortName.equals(gunType.shortName))
+					return gbe;
+			}
+		}
+		return null;
+	}
 }
