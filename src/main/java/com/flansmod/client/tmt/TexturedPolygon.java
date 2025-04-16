@@ -57,7 +57,8 @@ public class TexturedPolygon
 	
 	public void draw(TmtTessellator tessellator, float f)
 	{
-		
+
+
 		if(nVertices == 3)
 			tessellator.startDrawing(GL11.GL_TRIANGLES);
 		else if (nVertices == 4)
@@ -114,6 +115,9 @@ public class TexturedPolygon
 			}
 			tessellator.addVertexWithUVW((float)positionTexturevertex.vector3D.xCoord * f, (float)positionTexturevertex.vector3D.yCoord * f, (float)positionTexturevertex.vector3D.zCoord * f, positionTexturevertex.texturePositionX, positionTexturevertex.texturePositionY, positionTexturevertex.texturePositionW);
 		}
+
+		GL11.glShadeModel(GL11.GL_SMOOTH);
+		
 
 		tessellator.draw();
 	}

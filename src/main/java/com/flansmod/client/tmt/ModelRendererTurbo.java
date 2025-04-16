@@ -53,8 +53,8 @@ public class ModelRendererTurbo extends ModelRenderer {
     private boolean compiled;
     private int displayList;
     private int[] displayListArray;
-    private final Map<String, TransformGroup> transformGroup;
-    private final Map<String, TextureGroup> textureGroup;
+    public final Map<String, TransformGroup> transformGroup;
+    public final Map<String, TextureGroup> textureGroup;
     private TransformGroup currentGroup;
     private TextureGroup currentTextureGroup;
     private String defaultTexture;

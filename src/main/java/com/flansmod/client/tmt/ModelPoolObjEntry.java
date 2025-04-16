@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
 
+import com.flansmod.common.FlansMod;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.Vec3;
 
@@ -192,10 +193,20 @@ public class ModelPoolObjEntry extends ModelPoolEntry
 					{
 						vToArr[i] = v.get(i);
 					}
-					
-					TexturedPolygon poly = new TexturedPolygon(vToArr);
-					poly.setNormals(normal[0], normal[1], normal[2]);
-					poly.setNormals(iNormal);
+
+Vec3 normalVector = Vec3.createVectorHelper(0,1,0);
+if (v.size() > 2) {
+	Vec3 v1 = Vec3.createVectorHelper(v.get(1).vector3D.xCoord - v.get(0).vector3D.xCoord, v.get(1).vector3D.yCoord - v.get(0).vector3D.yCoord, v.get(1).vector3D.zCoord - v.get(0).vector3D.zCoord);
+	Vec3 v2 = Vec3.createVectorHelper(v.get(2).vector3D.xCoord - v.get(0).vector3D.xCoord, v.get(2).vector3D.yCoord - v.get(0).vector3D.yCoord, v.get(2).vector3D.zCoord - v.get(0).vector3D.zCoord);
+
+	normalVector = v1.crossProduct(v2).normalize();
+}
+
+TexturedPolygon poly = new TexturedPolygon(vToArr);
+//poly.setNormals(normal[0], normal[1], normal[2]);
+//poly.setNormals(iNormal);
+
+					poly.setNormals((float)normalVector.xCoord, (float)normalVector.yCoord, (float)normalVector.zCoord);
 
 					face.add(poly);
 					texture.addPoly(poly);
@@ -214,9 +225,9 @@ public class ModelPoolObjEntry extends ModelPoolEntry
 			}
 			in.close();
 		}
-		catch(Throwable ignored)
+		catch(Exception ex)
 		{
-			
+			FlansMod.log("e");
 		}
 	}
 }
