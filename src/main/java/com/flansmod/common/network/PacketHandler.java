@@ -1,17 +1,18 @@
 package com.flansmod.common.network;
 
+import com.flansmod.common.FlansMod;
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.network.FMLEmbeddedChannel;
+import cpw.mods.fml.common.network.FMLOutboundHandler;
+import cpw.mods.fml.common.network.NetworkRegistry;
+import cpw.mods.fml.common.network.internal.FMLProxyPacket;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.LinkedList;
-import java.util.List;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -20,15 +21,7 @@ import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraft.network.Packet;
 import net.minecraft.server.MinecraftServer;
 
-import com.flansmod.common.FlansMod;
-
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.network.FMLEmbeddedChannel;
-import cpw.mods.fml.common.network.FMLOutboundHandler;
-import cpw.mods.fml.common.network.NetworkRegistry;
-import cpw.mods.fml.common.network.internal.FMLProxyPacket;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+import java.util.*;
 
 /**
  * Flan's Mod packet handler class. Directs packet data to packet classes.
@@ -41,7 +34,7 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
     //Map of channels for each side
     private EnumMap<Side, FMLEmbeddedChannel> channels;
     //The list of registered packets. Should contain no more than 256 packets.
-    private LinkedList<Class<? extends PacketBase>> packets = new LinkedList<Class<? extends PacketBase>>();
+    private final LinkedList<Class<? extends PacketBase>> packets = new LinkedList<>();
     //Whether or not Flan's Mod has initialised yet. Once true, no more packets may be registered.
     private boolean modInitialised = false;
 
@@ -86,6 +79,8 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
         FMLProxyPacket proxyPacket = new FMLProxyPacket(encodedData.copy(), ctx.channel().attr(NetworkRegistry.FML_CHANNEL).get());
         //Add our packet to the outgoing packet queue
         out.add(proxyPacket);
+        //Release the buffer
+        encodedData.release();
     }
 
     @Override
@@ -115,6 +110,8 @@ public class PacketHandler extends MessageToMessageCodec<FMLProxyPacket, PacketB
                 break;
             }
         }
+        //Release the buffer
+        encodedData.release();
     }
 
     /**
