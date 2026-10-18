@@ -28,6 +28,7 @@ import net.minecraft.world.World;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.WeakHashMap;
 
 public class CommonProxy {
     public void loadFlanAssets() {
@@ -91,7 +92,7 @@ public class CommonProxy {
         return null;
     }
 
-    public HashMap<EntityLivingBase, GunAnimations> getAnimations(boolean left) {
+    public WeakHashMap<EntityLivingBase, GunAnimations> getAnimations(boolean left) {
         if (left) {
             return FlansMod.gunAnimationsLeft;
         } else return FlansMod.gunAnimationsRight;

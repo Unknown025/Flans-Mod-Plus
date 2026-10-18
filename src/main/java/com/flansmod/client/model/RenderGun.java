@@ -35,7 +35,9 @@ import net.minecraftforge.client.IItemRenderer;
 
 public class RenderGun implements IItemRenderer {
 	private static TextureManager renderEngine;
+	private static final ModelBiped modelBipedMain = new ModelBiped(0.0F);
 	public static float smoothing;
+	private static final Random rand = new Random();
 
 	@Override
 	public boolean handleRenderType(ItemStack item, ItemRenderType type) {
@@ -72,7 +74,7 @@ public class RenderGun implements IItemRenderer {
 		// Render main hand gun
 		GunAnimations animations;
 		if (type == ItemRenderType.ENTITY) {
-			animations = new GunAnimations();
+			animations = GunAnimations.defaults;
 		} else {
 			animations = FlansModClient.getGunAnimations((EntityLivingBase) data[1], false);
 		}
@@ -181,10 +183,8 @@ public class RenderGun implements IItemRenderer {
 
 		//If in scope, dont render the gun unless its forced in the gun settings
 		if (FlansModClient.zoomProgress > 0.9F && scope.hasZoomOverlay() && !model.stillRenderGunWhenScopedOverlay) {
-			GL11.glPopMatrix();
+			GL11.glPopMatrix(); //TODO: fix underflow bug
 			return;
-
-
 		}
 
 		//Resting positions
@@ -1178,7 +1178,7 @@ public class RenderGun implements IItemRenderer {
 	private void handleGunRecoil(GunAnimations animations, ModelGun model, float recoilDistance, float recoilAngle) {
 		float min = -1.5f;
 		float max = 1.5f;
-		float randomNum = new Random().nextFloat();
+		float randomNum = rand.nextFloat();
 		float result = min + (randomNum * (max - min));
 
 		GL11.glTranslatef(0F, 0, 0);
@@ -1244,7 +1244,6 @@ public class RenderGun implements IItemRenderer {
 
 	private void renderFirstPersonArm(EntityPlayer player, ModelGun model, GunAnimations anim) {
 		Minecraft mc = Minecraft.getMinecraft();
-		ModelBiped modelBipedMain = new ModelBiped(0.0F);
 		mc.renderEngine.bindTexture(mc.thePlayer.getLocationSkin());
 
 		float f = 1.0F;
@@ -1303,7 +1302,6 @@ public class RenderGun implements IItemRenderer {
 
 	private void renderAnimArm(EntityPlayer player, ModelGun model, GunType type, GunAnimations anim) {
 		Minecraft mc = Minecraft.getMinecraft();
-		ModelBiped modelBipedMain = new ModelBiped(0.0F);
 		mc.renderEngine.bindTexture(mc.thePlayer.getLocationSkin());
 		GL11.glPushMatrix();
 		GL11.glScalef(1 / type.modelScale, 1 / type.modelScale, 1 / type.modelScale);

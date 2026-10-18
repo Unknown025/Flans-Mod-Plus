@@ -55,6 +55,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.WeakHashMap;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
 @Mod(modid = FlansMod.MODID, name = "Flan's Mod Ultimate (Stability Edition)", version = FlansMod.VERSION, acceptableRemoteVersions = "[" + FlansMod.VERSION + "]", guiFactory = "com.flansmod.client.gui.config.ModGuiFactory")
@@ -187,7 +188,7 @@ public class FlansMod {
     /**
      * Gun animation variables for each entity holding a gun. Currently only applicable to the player
      */
-    public static HashMap<EntityLivingBase, GunAnimations> gunAnimationsRight = new HashMap<>(), gunAnimationsLeft = new HashMap<>();
+    public static WeakHashMap<EntityLivingBase, GunAnimations> gunAnimationsRight = new WeakHashMap<>(), gunAnimationsLeft = new WeakHashMap<>();
 
     public static boolean debugMode = true;
     public static int bonusRegenTickDelay = 80;
