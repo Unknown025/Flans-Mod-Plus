@@ -1,5 +1,6 @@
 package com.flansmod.common.teams;
 
+import com.flansmod.client.FlansModClient;
 import com.flansmod.common.FlansMod;
 import com.flansmod.common.PlayerData;
 import com.flansmod.common.PlayerHandler;
@@ -1058,6 +1059,11 @@ public class TeamsManager {
                 // Clear gun animations to prevent old references to world objects.
                 FlansMod.gunAnimationsLeft.clear();
                 FlansMod.gunAnimationsRight.clear();
+                // Clear sound cache.
+                FlansModClient.reloadSound.clear();
+                // Clear teams cache.
+                PlayerHandler.clientSideData.clear();
+                PlayerHandler.clientSidePlayerStats.clear();
             }
             return;
         }

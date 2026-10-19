@@ -1,6 +1,8 @@
 package com.flansmod.client;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
@@ -353,12 +355,24 @@ public class FlansModClient extends FlansMod {
             antiRecoilPitch *= 0.8F;
             antiRecoilYaw *= 0.8F;
         }
-        //Update gun animations for the gun in hand
-        for (GunAnimations g : gunAnimationsRight.values()) {
-            g.update();
+
+        // Update gun animations for the gun in hand and purge old entries
+        Iterator<Map.Entry<EntityLivingBase, GunAnimations>> it1 = FlansModClient.gunAnimationsLeft.entrySet().iterator();
+        while (it1.hasNext()) {
+            Map.Entry<EntityLivingBase, GunAnimations> next = it1.next();
+            if (next.getKey().isDead)
+                it1.remove();
+            else
+                next.getValue().update();
         }
-        for (GunAnimations g : gunAnimationsLeft.values()) {
-            g.update();
+
+        Iterator<Map.Entry<EntityLivingBase, GunAnimations>> it2 = FlansModClient.gunAnimationsRight.entrySet().iterator();
+        while (it2.hasNext()) {
+            Map.Entry<EntityLivingBase, GunAnimations> next = it2.next();
+            if (next.getKey().isDead)
+                it2.remove();
+            else
+                next.getValue().update();
         }
 
         for (Object obj : minecraft.theWorld.playerEntities) {

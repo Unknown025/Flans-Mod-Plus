@@ -37,11 +37,11 @@ import java.util.Random;
 public class PlayerHandler {
     private static final Random rand = new Random();
     private boolean statsSynced = false;
-    public static Map<String, PlayerData> serverSideData = new HashMap<String, PlayerData>();
-    public static Map<String, PlayerData> clientSideData = new HashMap<String, PlayerData>();
-    public static Map<String, PlayerStats> serverSidePlayerStats = new HashMap<String, PlayerStats>();
-    public static Map<String, PlayerStats> clientSidePlayerStats = new HashMap<String, PlayerStats>();
-    public static ArrayList<String> clientsToRemoveAfterThisRound = new ArrayList<String>();
+    public static Map<String, PlayerData> serverSideData = new HashMap<>();
+    public static Map<String, PlayerData> clientSideData = new HashMap<>();
+    public static Map<String, PlayerStats> serverSidePlayerStats = new HashMap<>();
+    public static Map<String, PlayerStats> clientSidePlayerStats = new HashMap<>();
+    public static ArrayList<String> clientsToRemoveAfterThisRound = new ArrayList<>();
 
     public PlayerHandler() {
         MinecraftForge.EVENT_BUS.register(this);

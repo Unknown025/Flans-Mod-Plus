@@ -81,14 +81,13 @@ public class FlansModResourceHandler
 	
 	public static ResourceLocation getSound(String sound)
 	{
-		if(soundMap.containsKey(sound))
-		{
-			//return soundMap.get(sound);
+		if (soundMap.containsKey(sound)) {
+			return soundMap.get(sound); // Might need to refresh the cache if reloaded in dev
 		}
 		ResourceLocation resLoc = new ResourceLocation("flansmod", sound);
 		soundMap.put(sound, resLoc);
 		return resLoc;
-		//FMLClientHandler.instance().getClient().getSoundHandler().playSound("flansmod:" + sound + ".ogg");   
+		//FMLClientHandler.instance().getClient().getSoundHandler().playSound("flansmod:" + sound + ".ogg");
 	}
 
 	public static ResourceLocation getPaintjobTexture(Paintjob paintjob) 

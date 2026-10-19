@@ -12,10 +12,11 @@ import net.minecraft.potion.Potion;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.UUID;
 
 public class ServerTickEvent {
     public static ArrayList<EntityPlayerMP> nightVisionPlayers = new ArrayList<>();
-    public static HashMap<EntityPlayerMP, Integer> regenTimers = new HashMap<>();
+    public static HashMap<UUID, Integer> regenTimers = new HashMap<>();
 
     public ServerTickEvent() {
         FMLCommonHandler.instance().bus().register(this);
@@ -58,13 +59,13 @@ public class ServerTickEvent {
 
         EntityPlayerMP player = (EntityPlayerMP) event.player;
 
-        int regenTimer = regenTimers.containsKey(player) ? regenTimers.get(player) : 0;
+        int regenTimer = regenTimers.containsKey(player.getUniqueID()) ? regenTimers.get(player.getUniqueID()) : 0;
         if (regenTimer >= FlansMod.bonusRegenTickDelay) {
             if (player.getFoodStats().getFoodLevel() >= FlansMod.bonusRegenFoodLimit) {
                 player.heal(FlansMod.bonusRegenAmount);
             }
             regenTimer = 0;
         }
-        regenTimers.put(player, ++regenTimer);
+        regenTimers.put(player.getUniqueID(), ++regenTimer);
     }
 }
