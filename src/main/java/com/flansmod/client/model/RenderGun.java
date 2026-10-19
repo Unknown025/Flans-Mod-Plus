@@ -181,9 +181,8 @@ public class RenderGun implements IItemRenderer {
 		boolean sprinting = FlansModClient.zoomProgress + 0.1F < 0.2F && ItemGun.sprinting && !animations.reloading
 				&& !ItemGun.shooting && model.fancyStance;
 
-		//If in scope, dont render the gun unless its forced in the gun settings
+		//If in scope, don't render the gun unless it's forced in the gun settings
 		if (FlansModClient.zoomProgress > 0.9F && scope.hasZoomOverlay() && !model.stillRenderGunWhenScopedOverlay) {
-			GL11.glPopMatrix(); //TODO: fix underflow bug
 			return;
 		}
 

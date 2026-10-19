@@ -1053,8 +1053,14 @@ public class TeamsManager {
 
     @SubscribeEvent
     public void worldData(WorldEvent event) {
-        if (event.world.isRemote)
+        if (event.world.isRemote) {
+            if (event instanceof WorldEvent.Unload) {
+                // Clear gun animations to prevent old references to world objects.
+                FlansMod.gunAnimationsLeft.clear();
+                FlansMod.gunAnimationsRight.clear();
+            }
             return;
+        }
         if (event instanceof WorldEvent.Load) {
             loadPerWorldData(event, event.world);
             savePerWorldData(event, event.world);
